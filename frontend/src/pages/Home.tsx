@@ -190,6 +190,7 @@ export default function Home() {
             />
           </div>
           <div className="qm-header-actions">
+            <a href="/account" className="qm-account-btn">👤 Account</a>
             <button className="qm-cart-btn" onClick={() => setCartOpen(true)}>
               🛒
               {totalItems > 0 && <span className="qm-cart-badge">{totalItems}</span>}

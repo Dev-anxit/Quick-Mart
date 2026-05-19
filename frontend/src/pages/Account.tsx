@@ -24,14 +24,27 @@ interface Order {
   items: any[];
 }
 
+const S: Record<string, any> = {
+  page: { minHeight: '100vh', background: '#f5f5f0', fontFamily: "'Inter', sans-serif" },
+  header: { background: '#fff', borderBottom: '1px solid #e8e8e8', padding: '0 1.5rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as const, top: 0, zIndex: 50 },
+  logo: { fontSize: '1.4rem', fontWeight: 900, color: '#111', textDecoration: 'none', letterSpacing: -1 },
+  body: { maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.5rem' },
+  card: { background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' },
+  sidebar: { background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8', position: 'sticky' as const, top: 80, height: 'fit-content' },
+  avatar: { width: 64, height: 64, background: 'linear-gradient(135deg, #0d9e6e, #065f46)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 0.75rem' },
+  tabBtn: (active: boolean) => ({ width: '100%', textAlign: 'left' as const, padding: '0.625rem 0.875rem', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', background: active ? '#f0fdf9' : 'none', color: active ? '#0d9e6e' : '#555', transition: 'all 0.2s', marginBottom: 4 }),
+  input: { width: '100%', padding: '0.625rem 0.875rem', border: '1.5px solid #e0e0e0', borderRadius: 10, fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const },
+  btnPrimary: { background: '#0d9e6e', color: '#fff', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' },
+  btnSecondary: { background: '#f0f0f0', color: '#555', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' },
+  btnDanger: { background: '#ef4444', color: '#fff', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', width: '100%', marginTop: '1rem' },
+};
+
 export default function Account() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useUIStore();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'orders'>(
-    'profile'
-  );
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'orders'>('profile');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,38 +54,21 @@ export default function Account() {
     phone: user?.phone || '',
   });
 
-  // Fetch addresses
   useEffect(() => {
     if (activeTab === 'addresses') {
-      const fetchAddresses = async () => {
-        try {
-          const data = await userService.getSavedAddresses();
-          setAddresses(Array.isArray(data) ? data : []);
-        } catch (error) {
-          console.error('Failed to fetch addresses:', error);
-        }
-      };
-
-      fetchAddresses();
+      userService.getSavedAddresses()
+        .then(data => setAddresses(Array.isArray(data) ? data : []))
+        .catch(() => {});
     }
   }, [activeTab]);
 
-  // Fetch orders
   useEffect(() => {
     if (activeTab === 'orders') {
-      const fetchOrders = async () => {
-        try {
-          setIsLoading(true);
-          const response = await orderService.getUserOrders(1, 10);
-          setOrders(response.data || []);
-        } catch (error) {
-          console.error('Failed to fetch orders:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchOrders();
+      setIsLoading(true);
+      orderService.getUserOrders(1, 10)
+        .then(r => setOrders(r.data || []))
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
     }
   }, [activeTab]);
 
@@ -80,17 +76,10 @@ export default function Account() {
     try {
       setIsLoading(true);
       await authService.updateProfile(profileForm);
-      addToast({
-        type: 'success',
-        message: 'Profile updated successfully',
-      });
+      addToast({ type: 'success', message: 'Profile updated successfully' });
       setEditingProfile(false);
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      addToast({
-        type: 'error',
-        message: 'Failed to update profile',
-      });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to update profile' });
     } finally {
       setIsLoading(false);
     }
@@ -99,264 +88,178 @@ export default function Account() {
   const handleLogout = async () => {
     try {
       await logout();
-      addToast({
-        type: 'success',
-        message: 'Logged out successfully',
-      });
       navigate('/');
-    } catch (error) {
-      addToast({
-        type: 'error',
-        message: 'Failed to logout',
-      });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to logout' });
     }
   };
 
   const handleDeleteAddress = async (id: string) => {
     try {
       await userService.deleteAddress(id);
-      setAddresses(addresses.filter((a) => a._id !== id));
-      addToast({
-        type: 'success',
-        message: 'Address deleted',
-      });
-    } catch (error) {
-      addToast({
-        type: 'error',
-        message: 'Failed to delete address',
-      });
+      setAddresses(addresses.filter(a => a._id !== id));
+      addToast({ type: 'success', message: 'Address deleted' });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to delete address' });
     }
   };
 
+  const statusColor = (s: string) => {
+    if (s === 'delivered') return { bg: '#d1fae5', color: '#065f46' };
+    if (s === 'cancelled') return { bg: '#fee2e2', color: '#991b1b' };
+    return { bg: '#dbeafe', color: '#1d4ed8' };
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="md:col-span-1">
-            <div className="bg-white rounded-lg p-6 sticky top-8">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
-                  👤
-                </div>
-                <p className="font-bold text-gray-900">{user?.name}</p>
-                <p className="text-sm text-gray-600">{user?.email}</p>
-              </div>
+    <div style={S.page}>
+      {/* Header */}
+      <div style={S.header}>
+        <a href="/" style={S.logo}>Quick<span style={{ color: '#0d9e6e' }}>Mart</span></a>
+        <span style={{ fontSize: '0.85rem', color: '#888' }}>My Account</span>
+      </div>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => setActiveTab('profile')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                    activeTab === 'profile'
-                      ? 'bg-violet-100 text-violet-600 font-bold'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  👤 Profile
-                </button>
-                <button
-                  onClick={() => setActiveTab('addresses')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                    activeTab === 'addresses'
-                      ? 'bg-violet-100 text-violet-600 font-bold'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  📍 Addresses
-                </button>
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                    activeTab === 'orders'
-                      ? 'bg-violet-100 text-violet-600 font-bold'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  📦 Orders
-                </button>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition mt-6"
-              >
-                🚪 Logout
-              </button>
-            </div>
+      <div style={S.body}>
+        {/* Sidebar */}
+        <div style={S.sidebar}>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={S.avatar}>👤</div>
+            <p style={{ fontWeight: 800, color: '#111', margin: '0 0 0.25rem' }}>{user?.name || 'User'}</p>
+            <p style={{ fontSize: '0.78rem', color: '#888', margin: 0 }}>{user?.email}</p>
           </div>
+          <div>
+            {(['profile', 'addresses', 'orders'] as const).map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={S.tabBtn(activeTab === tab)}>
+                {tab === 'profile' ? '👤 Profile' : tab === 'addresses' ? '📍 Saved Addresses' : '📦 Order History'}
+              </button>
+            ))}
+          </div>
+          <button onClick={handleLogout} style={S.btnDanger}>🚪 Logout</button>
+        </div>
 
-          {/* Main Content */}
-          <div className="md:col-span-3">
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
-
-                {editingProfile ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Full Name
-                      </label>
+        {/* Main */}
+        <div>
+          {/* Profile */}
+          {activeTab === 'profile' && (
+            <div style={S.card}>
+              <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#111', margin: '0 0 1.5rem' }}>Profile Information</h2>
+              {editingProfile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {[
+                    { label: 'Full Name', key: 'name', type: 'text', placeholder: 'Your name' },
+                    { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+91 98765 43210' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#555', display: 'block', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{f.label}</label>
                       <input
-                        type="text"
-                        value={profileForm.name}
-                        onChange={(e) =>
-                          setProfileForm({ ...profileForm, name: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none"
+                        type={f.type}
+                        value={(profileForm as any)[f.key]}
+                        onChange={e => setProfileForm({ ...profileForm, [f.key]: e.target.value })}
+                        placeholder={f.placeholder}
+                        style={S.input}
+                        onFocus={e => (e.target.style.borderColor = '#0d9e6e')}
+                        onBlur={e => (e.target.style.borderColor = '#e0e0e0')}
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Phone
-                      </label>
-                      <input
-                        type="tel"
-                        value={profileForm.phone}
-                        onChange={(e) =>
-                          setProfileForm({ ...profileForm, phone: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleUpdateProfile}
-                        disabled={isLoading}
-                        className="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 disabled:opacity-50"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingProfile(false)}
-                        className="bg-gray-300 text-gray-900 font-bold py-2 px-6 rounded-lg hover:bg-gray-400"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-semibold text-gray-900">{user?.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Phone</p>
-                        <p className="font-semibold text-gray-900">{user?.phone || 'Not set'}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setEditingProfile(true)}
-                      className="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700"
-                    >
-                      Edit Profile
+                  ))}
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button onClick={handleUpdateProfile} disabled={isLoading} style={S.btnPrimary}>
+                      {isLoading ? 'Saving...' : '✓ Save Changes'}
                     </button>
+                    <button onClick={() => setEditingProfile(false)} style={S.btnSecondary}>Cancel</button>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                    {[
+                      { label: 'Full Name', value: user?.name || 'Not set' },
+                      { label: 'Email', value: user?.email || 'Not set' },
+                      { label: 'Phone', value: user?.phone || 'Not set' },
+                    ].map(f => (
+                      <div key={f.label} style={{ background: '#f9f9f7', borderRadius: 10, padding: '0.875rem' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#888', margin: '0 0 0.25rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{f.label}</p>
+                        <p style={{ fontWeight: 700, color: '#111', margin: 0, fontSize: '0.9rem' }}>{f.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setEditingProfile(true)} style={S.btnPrimary}>✏️ Edit Profile</button>
+                </div>
+              )}
+            </div>
+          )}
 
-            {/* Addresses Tab */}
-            {activeTab === 'addresses' && (
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Saved Addresses</h2>
+          {/* Addresses */}
+          {activeTab === 'addresses' && (
+            <div style={S.card}>
+              <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#111', margin: '0 0 1.25rem' }}>📍 Saved Addresses</h2>
+              {addresses.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  {addresses.map(addr => (
+                    <div key={addr._id} style={{ border: '1.5px solid #e0e0e0', borderRadius: 12, padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                          <span style={{ fontWeight: 800, color: '#111', fontSize: '0.9rem', textTransform: 'capitalize' }}>{addr.label}</span>
+                          {addr.is_default && <span style={{ background: '#f0fdf9', color: '#0d9e6e', fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: 20 }}>Default</span>}
+                        </div>
+                        <p style={{ color: '#555', margin: 0, fontSize: '0.85rem' }}>{addr.street}, {addr.city} — {addr.pincode}</p>
+                      </div>
+                      <button onClick={() => handleDeleteAddress(addr._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '3rem 0', color: '#888' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📍</div>
+                  <p style={{ fontWeight: 600 }}>No saved addresses yet</p>
+                  <p style={{ fontSize: '0.85rem' }}>Addresses you save during checkout will appear here</p>
+                </div>
+              )}
+            </div>
+          )}
 
-                {addresses.length > 0 ? (
-                  <div className="space-y-4">
-                    {addresses.map((addr) => (
-                      <div
-                        key={addr._id}
-                        className="border border-gray-300 rounded-lg p-4 flex justify-between items-start"
+          {/* Orders */}
+          {activeTab === 'orders' && (
+            <div style={S.card}>
+              <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#111', margin: '0 0 1.25rem' }}>📦 Order History</h2>
+              {isLoading ? (
+                <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                  <div style={{ width: 36, height: 36, border: '3px solid #0d9e6e', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+                </div>
+              ) : orders.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  {orders.map(order => {
+                    const sc = statusColor(order.status);
+                    return (
+                      <div key={order._id} onClick={() => navigate(`/track/${order._id}`)}
+                        style={{ border: '1.5px solid #e0e0e0', borderRadius: 12, padding: '1rem', cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#0d9e6e'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(13,158,110,0.1)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e0e0e0'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}
                       >
                         <div>
-                          <p className="font-bold text-gray-900">{addr.label}</p>
-                          <p className="text-gray-700">
-                            {addr.street}, {addr.city} {addr.pincode}
-                          </p>
-                          {addr.is_default && (
-                            <span className="inline-block mt-2 bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">
-                              Default
-                            </span>
-                          )}
+                          <p style={{ fontWeight: 800, color: '#111', margin: '0 0 0.25rem', fontSize: '0.9rem' }}>Order #{order.order_number}</p>
+                          <p style={{ color: '#888', margin: 0, fontSize: '0.8rem' }}>{new Date(order.created_at).toLocaleDateString()} · {order.items?.length || 0} items</p>
                         </div>
-                        <button
-                          onClick={() => handleDeleteAddress(addr._id)}
-                          className="text-red-600 hover:text-red-800 font-semibold"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No saved addresses</p>
-                )}
-              </div>
-            )}
-
-            {/* Orders Tab */}
-            {activeTab === 'orders' && (
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Order History</h2>
-
-                {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="w-8 h-8 border-4 border-violet-600 border-t-white rounded-full animate-spin mx-auto"></div>
-                  </div>
-                ) : orders.length > 0 ? (
-                  <div className="space-y-4">
-                    {orders.map((order) => (
-                      <div
-                        key={order._id}
-                        className="border border-gray-300 rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
-                        onClick={() => navigate(`/track/${order._id}`)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              Order #{order.order_number}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-violet-600">
-                              ₹{order.total_amount?.toFixed(2) || '0.00'}
-                            </p>
-                            <span
-                              className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
-                                order.status === 'delivered'
-                                  ? 'bg-green-100 text-green-800'
-                                  : order.status === 'cancelled'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}
-                            >
-                              {order.status}
-                            </span>
-                          </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontWeight: 900, color: '#111', margin: '0 0 0.375rem', fontSize: '1rem' }}>₹{order.total_amount?.toFixed(0)}</p>
+                          <span style={{ padding: '0.25rem 0.75rem', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: sc.bg, color: sc.color }}>{order.status.replace(/_/g, ' ')}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No orders yet</p>
-                )}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '3rem 0', color: '#888' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📦</div>
+                  <p style={{ fontWeight: 600 }}>No orders yet</p>
+                  <p style={{ fontSize: '0.85rem' }}>Your order history will appear here after you place an order</p>
+                  <button onClick={() => navigate('/')} style={{ ...S.btnPrimary, marginTop: '1rem' }}>Start Shopping →</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @media (max-width: 768px) { div[style*="gridTemplateColumns: 260px"] { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }

@@ -62,22 +62,16 @@ export async function getDashboardMetrics(req: Request, res: Response) {
     res.json({
       success: true,
       data: {
-        revenue: {
-          today: todayRevenue[0]?.total || 0,
-          thisMonth: thisMonthRevenue[0]?.total || 0,
-        },
-        orders: {
-          total: totalOrders,
-          today: todayOrders,
-          pending: pendingOrders,
-          confirmed: confirmedOrders,
-          delivered: deliveredOrders,
-        },
-        products: {
-          total: totalProducts,
-          lowStock: lowStockProducts,
-          topProducts,
-        },
+        total_revenue: thisMonthRevenue[0]?.total || 0,
+        today_revenue: todayRevenue[0]?.total || 0,
+        total_orders: totalOrders,
+        today_orders: todayOrders,
+        pending_orders: pendingOrders,
+        confirmed_orders: confirmedOrders,
+        delivered_orders: deliveredOrders,
+        active_products: totalProducts,
+        low_stock: lowStockProducts,
+        top_products: topProducts,
       },
     });
   } catch (error) {

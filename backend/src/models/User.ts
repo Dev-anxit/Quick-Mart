@@ -4,8 +4,8 @@ import { User } from '../types/index';
 const userSchema = new Schema<User & Document>({
   uid: { type: String, required: true, unique: true, index: true },
   email: { type: String, required: true, unique: true, lowercase: true },
-  phone: { type: String, required: true },
-  name: { type: String, required: true },
+  phone: { type: String, default: '' },
+  name: { type: String, default: '' },
   avatar: { type: String },
   phone_verified: { type: Boolean, default: false },
   created_at: { type: Date, default: Date.now, index: true },

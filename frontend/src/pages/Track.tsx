@@ -13,41 +13,44 @@ interface RiderLocation {
 }
 
 const STATUS_STAGES = [
-  { key: 'pending', label: 'Order Placed', icon: '📝' },
-  { key: 'confirmed', label: 'Confirmed', icon: '✅' },
-  { key: 'packed', label: 'Packed', icon: '📦' },
-  { key: 'picked_up', label: 'Picked Up', icon: '🚗' },
-  { key: 'on_way', label: 'On the Way', icon: '🚚' },
-  { key: 'delivered', label: 'Delivered', icon: '🎉' },
+  { key: 'pending',    label: 'Order Placed', icon: '📝' },
+  { key: 'confirmed', label: 'Confirmed',     icon: '✅' },
+  { key: 'packed',    label: 'Packed',        icon: '📦' },
+  { key: 'picked_up', label: 'Picked Up',     icon: '🚗' },
+  { key: 'on_way',    label: 'On the Way',    icon: '🚚' },
+  { key: 'delivered', label: 'Delivered',      icon: '🎉' },
 ];
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:         '#f59e0b',
+  payment_pending: '#f59e0b',
+  confirmed:       '#3b82f6',
+  packed:          '#8b5cf6',
+  picked_up:       '#06b6d4',
+  on_way:          '#10b981',
+  delivered:       '#059669',
+  cancelled:       '#ef4444',
+};
 
 export default function Track() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
-  // State
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [riderLocation, setRiderLocation] = useState<RiderLocation | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
-  // Initialize
   useEffect(() => {
-    if (!isLoggedIn) {
-      navigate('/');
-      return;
-    }
+    if (!isLoggedIn) { navigate('/'); return; }
 
     const fetchOrder = async () => {
       if (!orderId) return;
-
       try {
         setIsLoading(true);
         const data = await orderService.getOrderById(orderId);
         setOrder(data);
-
-        // Join Socket.io room
         socketService.connectSocket();
         socketService.joinOrderRoom(orderId);
       } catch (error) {
@@ -58,63 +61,44 @@ export default function Track() {
     };
 
     fetchOrder();
-
-    // Cleanup
-    return () => {
-      if (orderId) {
-        socketService.leaveOrderRoom(orderId);
-      }
-    };
+    return () => { if (orderId) socketService.leaveOrderRoom(orderId); };
   }, [isLoggedIn, orderId, navigate]);
 
-  // Listen for status updates
   useEffect(() => {
     if (!orderId) return;
-
-    const unsubscribe = socketService.onOrderStatusUpdate((data) => {
-      console.log('Order status updated:', data);
-      setOrder((prev) => (prev ? { ...prev, status: data.status } : null));
+    const unsub = socketService.onOrderStatusUpdate((data) => {
+      setOrder((prev) => (prev ? { ...prev, status: data.status as OrderResponse['status'] } : null));
     });
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    return () => { if (unsub) unsub(); };
   }, [orderId]);
 
-  // Listen for rider location updates
   useEffect(() => {
     if (!orderId) return;
-
-    const unsubscribe = socketService.onRiderLocationUpdate((data) => {
-      setRiderLocation(data.location);
-    });
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    const unsub = socketService.onRiderLocationUpdate((data) => setRiderLocation(data.location));
+    return () => { if (unsub) unsub(); };
   }, [orderId]);
 
-  // Timer for remaining time
   useEffect(() => {
     if (!order?.estimated_delivery_time) return;
-
     const interval = setInterval(() => {
-      const remaining = Math.max(
-        0,
-        new Date(order.estimated_delivery_time).getTime() - new Date().getTime()
-      );
+      const remaining = Math.max(0, new Date(order.estimated_delivery_time!).getTime() - Date.now());
       setTimeRemaining(remaining);
     }, 1000);
-
     return () => clearInterval(interval);
   }, [order?.estimated_delivery_time]);
 
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-violet-600 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Loading order...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f0' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '4px solid #0d9e6e', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+          <p style={{ color: '#555', fontFamily: "'Inter', sans-serif" }}>Loading your order...</p>
         </div>
       </div>
     );
@@ -122,14 +106,12 @@ export default function Track() {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">Order not found</p>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-violet-600 text-white px-6 py-2 rounded-lg"
-          >
-            Go Home
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f0' }}>
+        <div style={{ textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
+          <p style={{ color: '#555', fontSize: '1.1rem', marginBottom: '1.5rem' }}>Order not found</p>
+          <button onClick={() => navigate('/')} style={{ background: '#0d9e6e', color: '#fff', border: 'none', borderRadius: 10, padding: '0.75rem 1.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>
+            ← Go Home
           </button>
         </div>
       </div>
@@ -137,216 +119,193 @@ export default function Track() {
   }
 
   const currentStatusIndex = STATUS_STAGES.findIndex((s) => s.key === order.status);
-
-  // Format time remaining
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  const statusColor = STATUS_COLORS[order.status] || '#888';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 font-syne mb-2">
-          Order #{order.order_number}
-        </h1>
-        <p className="text-gray-600 mb-8">
-          {new Date(order.created_at).toLocaleDateString()}
-        </p>
+    <div style={{ minHeight: '100vh', background: '#f5f5f0', fontFamily: "'Inter', sans-serif" }}>
+      {/* Header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8', padding: '0 1.5rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+        <a href="/" style={{ fontSize: '1.4rem', fontWeight: 900, color: '#111', textDecoration: 'none', letterSpacing: -1 }}>Quick<span style={{ color: '#0d9e6e' }}>Mart</span></a>
+        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>← Continue Shopping</button>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Status Stepper */}
-            <div className="bg-white rounded-lg p-6">
-              <h2 className="font-bold text-gray-900 mb-6 text-lg">Order Status</h2>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: '1.5rem' }}>
+        {/* Left column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-              {/* Time Remaining */}
-              {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded-lg text-center">
-                  <p className="text-sm text-blue-700 mb-1">Estimated delivery in</p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {formatTime(timeRemaining)}
+          {/* Status header card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order #{order.order_number}</div>
+                <h1 style={{ fontSize: '1.4rem', fontWeight: 900, margin: '0.25rem 0 0', color: '#111' }}>
+                  {STATUS_STAGES.find(s => s.key === order.status)?.icon || '📦'} {STATUS_STAGES.find(s => s.key === order.status)?.label || order.status}
+                </h1>
+              </div>
+              <span style={{ padding: '0.4rem 1rem', borderRadius: 20, fontSize: '0.78rem', fontWeight: 800, color: '#fff', background: statusColor }}>
+                {order.status.replace(/_/g, ' ').toUpperCase()}
+              </span>
+            </div>
+
+            {/* ETA countdown */}
+            {order.status !== 'delivered' && order.status !== 'cancelled' && (
+              <div style={{ background: 'linear-gradient(135deg, #f0fdf9, #d1fae5)', border: '1.5px solid #a7f3d0', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600, margin: '0 0 0.3rem' }}>Estimated delivery in</p>
+                <p style={{ fontSize: '2.5rem', fontWeight: 900, color: '#065f46', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {timeRemaining > 0 ? formatTime(timeRemaining) : '~10:00'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Status Stepper */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#111', margin: '0 0 1.25rem' }}>📍 Order Journey</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {STATUS_STAGES.map((stage, index) => {
+                const isCompleted = index < currentStatusIndex;
+                const isCurrent  = index === currentStatusIndex;
+                const isPending  = index > currentStatusIndex;
+                return (
+                  <div key={stage.key} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
+                    {/* Timeline */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.1rem',
+                        background: isCompleted ? '#0d9e6e' : isCurrent ? '#fff' : '#f5f5f0',
+                        border: isCurrent ? `3px solid #0d9e6e` : isCompleted ? '3px solid #0d9e6e' : '2px solid #e0e0e0',
+                        boxShadow: isCurrent ? '0 0 0 4px rgba(13,158,110,0.15)' : undefined,
+                        transition: 'all 0.3s',
+                      }}>
+                        {stage.icon}
+                      </div>
+                      {index < STATUS_STAGES.length - 1 && (
+                        <div style={{ width: 2, flexGrow: 1, minHeight: 32, background: isCompleted ? '#0d9e6e' : '#e8e8e8', margin: '4px 0', transition: 'background 0.3s' }} />
+                      )}
+                    </div>
+                    {/* Label */}
+                    <div style={{ paddingTop: 8, paddingBottom: index < STATUS_STAGES.length - 1 ? 20 : 0 }}>
+                      <p style={{ margin: 0, fontWeight: isCurrent ? 800 : 600, color: isCurrent ? '#0d9e6e' : isPending ? '#bbb' : '#555', fontSize: '0.9rem' }}>
+                        {stage.label}
+                      </p>
+                      {isCurrent && (
+                        <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#0d9e6e' }}>Currently happening...</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Rider section */}
+          {order.status === 'on_way' && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#111', margin: '0 0 1rem' }}>🏍️ Your Rider</h2>
+              <div style={{ background: 'linear-gradient(135deg, #f0fdf9, #d1fae5)', borderRadius: 12, padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ fontSize: '3rem' }}>🚴</div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#065f46' }}>Rider on the way!</p>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#059669' }}>Rider details will appear once assigned</p>
+                </div>
+              </div>
+              {riderLocation && (
+                <div style={{ marginTop: '0.875rem', background: '#eff6ff', borderRadius: 10, padding: '0.75rem', border: '1px solid #bfdbfe' }}>
+                  <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: '#1e40af' }}>📍 Live Location</p>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#3b82f6' }}>
+                    {riderLocation.lat.toFixed(4)}, {riderLocation.lng.toFixed(4)}
+                    {riderLocation.speed ? ` · ${riderLocation.speed} km/h` : ''}
                   </p>
                 </div>
               )}
-
-              {/* Status Timeline */}
-              <div className="space-y-4">
-                {STATUS_STAGES.map((stage, index) => (
-                  <div key={stage.key} className="flex gap-4">
-                    {/* Circle */}
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition ${
-                          index <= currentStatusIndex
-                            ? 'bg-violet-600 text-white'
-                            : 'bg-gray-200 text-gray-500'
-                        }`}
-                      >
-                        {stage.icon}
-                      </div>
-
-                      {/* Connector Line */}
-                      {index < STATUS_STAGES.length - 1 && (
-                        <div
-                          className={`w-1 h-12 my-1 transition ${
-                            index < currentStatusIndex ? 'bg-violet-600' : 'bg-gray-200'
-                          }`}
-                        />
-                      )}
-                    </div>
-
-                    {/* Label */}
-                    <div
-                      className={`flex-1 py-2 ${
-                        index === currentStatusIndex
-                          ? 'font-bold text-violet-600'
-                          : 'text-gray-600'
-                      }`}
-                    >
-                      <p>{stage.label}</p>
-                      {index === currentStatusIndex && (
-                        <p className="text-sm text-violet-500 mt-1">
-                          Currently happening...
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
+          )}
 
-            {/* Rider Information */}
-            {order.status === 'on_way' && (
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="font-bold text-gray-900 mb-4 text-lg">🚚 Your Rider</h2>
-
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">Coming Soon</p>
-                    <p className="text-sm text-gray-600">Rider details will appear here</p>
-                  </div>
-                  <div className="text-3xl">🏍️</div>
+          {/* Order items */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#111', margin: '0 0 1rem' }}>📦 Items Ordered</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {order.items?.map((item: any, index: number) => (
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem', borderRadius: 10, background: '#f9f9f7' }}>
+                  <span style={{ fontSize: '0.88rem', color: '#333', fontWeight: 600 }}>
+                    {item.product_name || item.name || `Item #${index + 1}`}
+                    <span style={{ color: '#888', fontWeight: 400 }}> × {item.quantity}</span>
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#111' }}>
+                    ₹{((item.price_at_purchase || 0) * item.quantity).toFixed(0)}
+                  </span>
                 </div>
-
-                {/* Location Map Placeholder */}
-                {riderLocation && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-semibold text-blue-900">Rider Location</p>
-                    <p className="text-xs text-blue-600 mt-2">
-                      Lat: {riderLocation.lat.toFixed(4)}, Lng:{' '}
-                      {riderLocation.lng.toFixed(4)}
-                    </p>
-                    {riderLocation.speed && (
-                      <p className="text-xs text-blue-600">Speed: {riderLocation.speed} km/h</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Order Details */}
-            <div className="bg-white rounded-lg p-6">
-              <h2 className="font-bold text-gray-900 mb-4 text-lg">📦 Items</h2>
-
-              <div className="space-y-3 border-b border-gray-200 pb-4 mb-4">
-                {order.items?.map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex justify-between text-sm text-gray-700"
-                  >
-                    <span>
-                      {item.product_name || item.name} x {item.quantity}
-                    </span>
-                    <span className="font-semibold">
-                      ₹{(item.price_at_purchase * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Price Summary */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal:</span>
-                  <span>₹{order.subtotal?.toFixed(2) || '0.00'}</span>
-                </div>
-                {order.discount && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount:</span>
-                    <span>-₹{order.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-gray-600">
-                  <span>Delivery Fee:</span>
-                  <span>₹{order.delivery_fee?.toFixed(2) || '0.00'}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Platform Fee:</span>
-                  <span>₹{order.platform_fee?.toFixed(2) || '0.00'}</span>
-                </div>
-
-                <div className="flex justify-between font-bold text-lg text-violet-600 pt-2 border-t border-gray-200 mt-2">
-                  <span>Total:</span>
-                  <span>₹{order.total_amount?.toFixed(2) || '0.00'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div className="bg-white rounded-lg p-6">
-              <h2 className="font-bold text-gray-900 mb-4 text-lg">📍 Delivery Address</h2>
-
-              <p className="text-gray-700">
-                {typeof order.delivery_address === 'string'
-                  ? order.delivery_address
-                  : order.delivery_address?.street +
-                    ', ' +
-                    order.delivery_address?.city}
-              </p>
+              ))}
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-lg p-6 text-white sticky top-8">
-              <h3 className="text-lg font-bold mb-4">Order Summary</h3>
+          {/* Delivery address */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#111', margin: '0 0 0.75rem' }}>📍 Delivery Address</h2>
+            <p style={{ margin: 0, color: '#555', fontSize: '0.9rem', lineHeight: 1.6 }}>
+              {typeof order.delivery_address === 'string'
+                ? order.delivery_address
+                : (order.delivery_address as any)?.street + ', ' + (order.delivery_address as any)?.city}
+            </p>
+          </div>
+        </div>
 
-              <div className="space-y-3 mb-6 pb-6 border-b border-violet-500">
-                <div className="flex justify-between text-sm">
-                  <span>Order ID:</span>
-                  <span className="font-mono text-xs">{order._id?.slice(-8)}</span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span>Status:</span>
-                  <span className="font-semibold">{order.status}</span>
-                </div>
-
-                {order.payment_method && (
-                  <div className="flex justify-between text-sm">
-                    <span>Payment:</span>
-                    <span className="font-semibold">{order.payment_method}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="text-xl font-bold mb-6 text-center">
-                ₹{order.total_amount?.toFixed(2) || '0.00'}
-              </div>
-
-              <button
-                onClick={() => navigate('/')}
-                className="w-full bg- white text-violet-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition"
-              >
-                Continue Shopping
-              </button>
+        {/* Right column — sidebar */}
+        <div>
+          <div style={{ background: 'linear-gradient(145deg, #0c1a12, #0d3d26)', borderRadius: 16, padding: '1.5rem', color: '#fff', position: 'sticky', top: 80 }}>
+            <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+              💳 Bill Summary
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)' }}>Order ID</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{order._id?.slice(-8)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)' }}>Status</span>
+                <span style={{ fontWeight: 700, color: '#4ade80' }}>{order.status.replace(/_/g, ' ')}</span>
+              </div>
+              {order.payment_method && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Payment</span>
+                  <span style={{ textTransform: 'capitalize' }}>{order.payment_method}</span>
+                </div>
+              )}
+              {order.delivery_fee !== undefined && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Delivery</span>
+                  <span>{order.delivery_fee === 0 ? <span style={{ color: '#4ade80' }}>FREE</span> : `₹${order.delivery_fee}`}</span>
+                </div>
+              )}
+              {order.platform_fee !== undefined && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Platform fee</span>
+                  <span>₹{order.platform_fee}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.2rem', marginBottom: '1.5rem' }}>
+              <span>Total</span>
+              <span>₹{order.total_amount?.toFixed(0) || '0'}</span>
+            </div>
+            <button
+              onClick={() => navigate('/')}
+              style={{ width: '100%', background: '#fff', color: '#0d3d26', border: 'none', borderRadius: 10, padding: '0.875rem', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'opacity 0.2s' }}
+            >
+              🛒 Continue Shopping
+            </button>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+          div[style*="gridTemplateColumns"] { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -43,10 +43,12 @@ export const orderService = {
     return response.data.data;
   },
 
-  // Get user orders
+  // Get user orders (user ID is derived from JWT on backend)
   getUserOrders: async (page: number = 1, limit: number = 10) => {
+    const { useAuthStore } = await import('../store/authStore');
+    const userId = useAuthStore.getState().user?.uid || 'me';
     const response = await apiClient.get<PaginatedResponse<OrderResponse>>(
-      `/orders/user/${null}?page=${page}&limit=${limit}` // Note: user ID is in token
+      `/orders/user/${userId}?page=${page}&limit=${limit}`
     );
     return response.data;
   },

@@ -11,7 +11,7 @@ export function connectSocket(): Socket {
     return socket;
   }
 
-  socket = io(API_URL, {
+  socket = io(`${API_URL}/orders`, {
     path: '/socket.io',
     reconnection: true,
     reconnectionDelay: 1000,

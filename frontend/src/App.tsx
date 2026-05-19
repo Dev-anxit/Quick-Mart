@@ -29,13 +29,52 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {toasts.map(t => (
-           <div key={t.id} onClick={() => removeToast(t.id)} style={{ background: t.type === 'error' ? '#ef4444' : '#10b981', color: 'white', padding: '12px 24px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer', fontFamily: 'sans-serif', fontWeight: 600 }}>
-             {t.message}
-           </div>
-        ))}
+      <div style={{
+        position: 'fixed', top: '80px', right: '20px', zIndex: 9999,
+        display: 'flex', flexDirection: 'column', gap: '10px',
+        maxWidth: 360, width: '100%',
+      }}>
+        {toasts.map(t => {
+          const styles: Record<string, { bg: string; icon: string; border: string }> = {
+            success: { bg: 'linear-gradient(135deg, #0d9e6e, #059669)', icon: '✓', border: '#065f46' },
+            error:   { bg: 'linear-gradient(135deg, #ef4444, #dc2626)', icon: '✕', border: '#991b1b' },
+            info:    { bg: 'linear-gradient(135deg, #3b82f6, #2563eb)', icon: 'ℹ', border: '#1d4ed8' },
+            warning: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: '⚠', border: '#92400e' },
+          };
+          const s = styles[t.type] || styles.info;
+          return (
+            <div
+              key={t.id}
+              onClick={() => removeToast(t.id)}
+              style={{
+                background: s.bg,
+                color: 'white',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+                fontSize: '0.88rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                animation: 'slideInToast 0.3s ease',
+                border: `1px solid ${s.border}40`,
+              }}
+            >
+              <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.8rem', fontWeight: 900 }}>{s.icon}</span>
+              <span style={{ flex: 1 }}>{t.message}</span>
+            </div>
+          );
+        })}
       </div>
+      <style>{`
+        @keyframes slideInToast {
+          from { transform: translateX(110%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+      `}</style>
     </>
   );
 }

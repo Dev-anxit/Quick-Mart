@@ -61,6 +61,7 @@ export default function Checkout() {
           delivery_address: `${street}, ${city} - ${pincode}`,
           delivery_time: 'asap',
           promo_code: appliedPromo?.code,
+          payment_method: 'razorpay',
         });
         const rOrder = await orderService.razorpayCreateOrder({
           order_id: createdOrder.order_id,

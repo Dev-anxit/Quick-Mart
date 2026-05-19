@@ -33,7 +33,7 @@ export interface ProductFilters {
   search?: string;
   brand?: string;
   rating?: number;
-  veg_nonveg?: 'veg' | 'nonveg';
+  veg_nonveg?: 'veg' | 'non-veg';
   sort?: 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'discount';
   page?: number;
   limit?: number;
@@ -53,7 +53,7 @@ export interface ProductResponse {
   rating: number;
   reviews: any[];
   nutritional_info: string;
-  veg_nonveg: 'veg' | 'nonveg';
+  veg_nonveg: 'veg' | 'non-veg';
   weight: string;
   createdAt?: string;
   updatedAt?: string;
@@ -181,6 +181,7 @@ export interface CreateOrderRequest {
   scheduled_time?: string;
   delivery_time?: string;
   promo_code?: string;
+  payment_method: string;
 }
 
 export interface RazorpayOrderRequest {
