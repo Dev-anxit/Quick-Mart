@@ -103,6 +103,62 @@ export const authService = {
   isAuthenticated: () => {
     return useAuthStore.getState().isLoggedIn;
   },
+
+  /**
+   * Send OTP to phone number
+   */
+  sendOTP: async (phone: string) => {
+    try {
+      // Format phone number - remove country code if present
+      const cleanPhone = phone.replace(/[^\d]/g, '').slice(-10);
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        debug_otp?: string;
+      }>('/auth/send-otp', { phone: cleanPhone });
+
+      if (response.data.success) {
+        return response.data;
+      }
+
+      throw new Error(response.data.message || 'Failed to send OTP');
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Verify OTP and login
+   */
+  verifyOTP: async (phone: string, otp: string) => {
+    try {
+      // Format phone number - remove country code if present
+      const cleanPhone = phone.replace(/[^\d]/g, '').slice(-10);
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        data: UserResponse & { token: string };
+      }>('/auth/verify-otp', { phone: cleanPhone, otp });
+
+      if (response.data.success && response.data.data) {
+        const { token, ...userData } = response.data.data;
+
+        // Store JWT and user in auth store
+        useAuthStore.getState().login(userData, token);
+
+        // Update API client with new token
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        return { user: userData, token };
+      }
+
+      throw new Error(response.data.message || 'OTP verification failed');
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      throw error;
+    }
+  },
 };
 
 export default authService;

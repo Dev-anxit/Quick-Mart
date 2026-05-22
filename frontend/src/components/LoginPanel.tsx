@@ -9,31 +9,45 @@ export function LoginPanel() {
   const [otp, setOtp] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [showOTPInput, setShowOTPInput] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleGoogleClick = async () => {
     try {
+      setErrorMessage('');
       await loginWithGoogle();
     } catch (error) {
       console.error('Login error:', error);
+      setErrorMessage('Google login is not available');
     }
   };
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phoneNumber.length < 10) return;
+    setErrorMessage('');
+    
+    if (phoneNumber.length < 10) {
+      setErrorMessage('Please enter a valid 10-digit phone number');
+      return;
+    }
+    
     try {
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-      const result = await loginWithPhone(formattedPhone);
+      const result = await loginWithPhone(phoneNumber);
       setConfirmationResult(result);
       setShowOTPInput(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Phone login error:', error);
+      setErrorMessage(error.message || 'Failed to send OTP');
     }
   };
 
   const handleOTPVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!confirmationResult || otp.length !== 6) return;
+    setErrorMessage('');
+    
+    if (!confirmationResult || otp.length !== 6 || !/^\d+$/.test(otp)) {
+      setErrorMessage('Please enter a valid 6-digit OTP');
+      return;
+    }
 
     try {
       await verifyOTP(otp, confirmationResult);
@@ -41,9 +55,27 @@ export function LoginPanel() {
       setOtp('');
       setConfirmationResult(null);
       setShowOTPInput(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('OTP error:', error);
+      setErrorMessage(error.message || 'Invalid OTP');
     }
+  };
+
+  const handleResendOTP = async () => {
+    setErrorMessage('');
+    try {
+      const result = await loginWithPhone(phoneNumber);
+      setConfirmationResult(result);
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+      setErrorMessage(error.message || 'Failed to resend OTP');
+    }
+  };
+
+  const handleBackToPhone = () => {
+    setOtp('');
+    setShowOTPInput(false);
+    setErrorMessage('');
   };
 
   return (
@@ -66,9 +98,23 @@ export function LoginPanel() {
           </h3>
           <p className="form-subtitle">
             {showOTPInput 
-              ? `Enter the 6-digit OTP sent to +91 ${phoneNumber}` 
+              ? `Enter the 6-digit OTP sent to +91${phoneNumber}` 
               : 'Log in or sign up to continue'}
           </p>
+
+          {errorMessage && (
+            <div style={{
+              padding: '12px',
+              marginBottom: '16px',
+              backgroundColor: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '4px',
+              color: '#c33',
+              fontSize: '14px'
+            }}>
+              {errorMessage}
+            </div>
+          )}
 
           {!showOTPInput ? (
             <div className="form-content">
@@ -129,7 +175,25 @@ export function LoginPanel() {
                     disabled={isLoading}
                     className="otp-field"
                     required
+                    autoFocus
                   />
+                  <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                    Didn't receive OTP?{' '}
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={isLoading}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#10b981',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      Resend OTP
+                    </button>
+                  </p>
                 </div>
                 <button
                   type="submit"
@@ -140,10 +204,8 @@ export function LoginPanel() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowOTPInput(false);
-                    setOtp('');
-                  }}
+                  onClick={handleBackToPhone}
+                  disabled={isLoading}
                   className="back-btn"
                 >
                   Change Phone Number

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import authService from '../services/authService';
-import * as firebaseAuth from '../services/firebase';
 
 interface UseAuthReturn {
   user: any | null;
@@ -10,7 +9,7 @@ interface UseAuthReturn {
   isLoading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithPhone: (phoneNumber: string) => Promise<any>;
-  verifyOTP: (code: string, confirmationResult: any) => Promise<void>;
+  verifyOTP: (code: string, phoneNumber: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -20,47 +19,30 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(false);
 
   /**
-   * Initialize Firebase auth state listener
+   * Initialize auth state from localStorage
    */
   useEffect(() => {
-    const unsubscribe = firebaseAuth.onAuthChange(async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          setIsLoading(true);
-          const firebaseToken = await firebaseUser.getIdToken();
-          // Verify Firebase token with backend and get JWT
-          await authService.verifyFirebaseToken(firebaseToken);
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          addToast({
-            type: 'error',
-            message: 'Failed to initialize authentication',
-          });
-          await authService.logout();
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    });
-
-    return () => unsubscribe();
+    const token = authService.getToken();
+    const user = authService.getCurrentUser();
+    if (token && user) {
+      // Auth state already loaded from localStorage via authStore
+      console.log('Auth state restored from localStorage');
+    }
   }, []);
 
   const loginWithGoogle = async () => {
     try {
       setIsLoading(true);
-      const { token } = await firebaseAuth.signInWithGoogle();
-
-      // Token will be verified through onAuthChange
       addToast({
-        type: 'success',
-        message: 'Logged in successfully!',
+        type: 'info',
+        message: 'Google login coming soon. Please use phone OTP for now.',
       });
+      throw new Error('Google login is not configured. Please use phone authentication.');
     } catch (error: any) {
       console.error('Google login error:', error);
       addToast({
         type: 'error',
-        message: error.message || 'Failed to login with Google',
+        message: error.message || 'Google login is not available',
       });
     } finally {
       setIsLoading(false);
@@ -70,12 +52,23 @@ export function useAuth(): UseAuthReturn {
   const loginWithPhone = async (phoneNumber: string) => {
     try {
       setIsLoading(true);
-      const confirmationResult = await firebaseAuth.initPhoneAuth(phoneNumber);
+      
+      // Validate phone number
+      const cleanPhone = phoneNumber.replace(/[^\d]/g, '').slice(-10);
+      if (cleanPhone.length !== 10) {
+        throw new Error('Please enter a valid 10-digit phone number');
+      }
+
+      // Send OTP through backend
+      await authService.sendOTP(phoneNumber);
+      
       addToast({
         type: 'success',
         message: 'OTP sent to your phone',
       });
-      return confirmationResult;
+      
+      // Return phone number to be used in OTP verification
+      return { phoneNumber: cleanPhone };
     } catch (error: any) {
       console.error('Phone login error:', error);
       addToast({
@@ -91,9 +84,21 @@ export function useAuth(): UseAuthReturn {
   const verifyOTP = async (code: string, confirmationResult: any) => {
     try {
       setIsLoading(true);
-      const { token } = await firebaseAuth.verifyPhoneOTP(code, confirmationResult);
+      
+      // Validate OTP
+      if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
+        throw new Error('Please enter a valid 6-digit OTP');
+      }
 
-      // Token will be verified through onAuthChange
+      // Get phone number from confirmationResult
+      const phoneNumber = confirmationResult?.phoneNumber;
+      if (!phoneNumber) {
+        throw new Error('Phone number not found. Please start over.');
+      }
+
+      // Verify OTP through backend
+      await authService.verifyOTP(phoneNumber, code);
+
       addToast({
         type: 'success',
         message: 'Phone verified successfully!',
@@ -113,7 +118,6 @@ export function useAuth(): UseAuthReturn {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await firebaseAuth.signOut();
       await authService.logout();
       addToast({
         type: 'success',

@@ -100,4 +100,129 @@ router.post("/logout", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// Send OTP to phone number
+router.post("/send-otp", async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ success: false, error: "Invalid phone number" });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    
+    // Store OTP in database (in production, use Redis or similar)
+    // For now, we'll use the User model to track OTP attempts
+    const cleanPhone = phone.replace(/[^\d]/g, '').slice(-10); // Get last 10 digits
+    
+    // Find or create user with this phone
+    let user = await UserModel.findOne({ phone: cleanPhone });
+    if (!user) {
+      user = new UserModel({
+        uid: `phone_${cleanPhone}_${Date.now()}`,
+        phone: cleanPhone,
+        email: `${cleanPhone}@quickmart.local`,
+        name: '',
+        phone_verified: false,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    }
+    
+    // Store OTP temporarily (in production use Redis with TTL)
+    (user as any).otp = otp;
+    (user as any).otp_expiry = otpExpiry;
+    await user.save();
+
+    // In production, send SMS via Twilio or similar service
+    // For development, log the OTP
+    console.log(`📱 OTP for ${cleanPhone}: ${otp}`);
+    
+    res.json({
+      success: true,
+      message: "OTP sent successfully",
+      // For development only - remove in production
+      debug_otp: process.env.NODE_ENV === "development" ? otp : undefined,
+    });
+  } catch (error) {
+    console.error("send-otp error:", error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : "Failed to send OTP" });
+  }
+});
+
+// Verify OTP and login
+router.post("/verify-otp", async (req: Request, res: Response) => {
+  try {
+    const { phone, otp } = req.body;
+    
+    console.log(`📝 Verify OTP request: phone=${phone}, otp=${otp}`);
+    
+    if (!phone || !otp) {
+      console.error("❌ Missing phone or OTP");
+      return res.status(400).json({ success: false, error: "Phone and OTP required" });
+    }
+
+    const cleanPhone = phone.replace(/[^\d]/g, '').slice(-10);
+    console.log(`🔍 Clean phone: ${cleanPhone}`);
+    
+    // Find user with phone number
+    const user = await UserModel.findOne({ phone: cleanPhone });
+    
+    console.log(`👤 User found: ${user ? 'yes' : 'no'}`);
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found. Please send OTP first." });
+    }
+
+    // Check OTP validity
+    const storedOtp = (user as any).otp;
+    const otpExpiry = (user as any).otp_expiry;
+    
+    console.log(`🔐 Stored OTP: ${storedOtp}, Input OTP: ${otp}, Match: ${storedOtp === otp}`);
+    
+    if (!storedOtp || !otpExpiry) {
+      return res.status(400).json({ success: false, error: "No OTP found. Please request a new OTP." });
+    }
+
+    if (new Date() > new Date(otpExpiry)) {
+      return res.status(400).json({ success: false, error: "OTP expired. Please request a new OTP." });
+    }
+
+    if (storedOtp !== otp) {
+      return res.status(401).json({ success: false, error: "Invalid OTP" });
+    }
+
+    // OTP verified successfully
+    user.phone_verified = true;
+    (user as any).otp = undefined;
+    (user as any).otp_expiry = undefined;
+    await user.save();
+
+    // Generate JWT token
+    const jwtToken = signToken({
+      uid: user.uid,
+      email: user.email,
+      role: "user",
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      data: {
+        _id: user._id,
+        uid: user.uid,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        phone_verified: user.phone_verified,
+        token: jwtToken,
+      },
+    });
+  } catch (error) {
+    console.error("verify-otp error:", error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : "OTP verification failed" });
+  }
+});
+
 export default router;

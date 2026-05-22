@@ -8,6 +8,8 @@ const userSchema = new Schema<User & Document>({
   name: { type: String, default: '' },
   avatar: { type: String },
   phone_verified: { type: Boolean, default: false },
+  otp: { type: String, default: null },
+  otp_expiry: { type: Date, default: null },
   created_at: { type: Date, default: Date.now, index: true },
   updated_at: { type: Date, default: Date.now },
 });
