@@ -6,6 +6,8 @@ export interface User {
   name: string;
   avatar?: string;
   phone_verified: boolean;
+  otp?: string;
+  otp_expiry?: Date;
   created_at: Date;
   updated_at: Date;
 }
