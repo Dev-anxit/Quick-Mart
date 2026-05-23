@@ -1,180 +1,133 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { ProductModel } from '../models/Product';
-import { CategoryModel } from '../models/Category';
+import type { Request, Response } from "express";
+import { ProductService } from '../services/productService';
+import { prisma } from '../config/prisma';
 
-// Get all products with filters, search, and pagination
 export async function getProducts(req: Request, res: Response) {
   try {
-    const { category, price_min, price_max, search, page = "1", limit = "20", sort = "relevance" } = req.query;
+    const { category, page = 1, limit = 20, sort = 'newest' } = req.query;
 
-    let query: any = {};
+    const categoryParam = Array.isArray(category) ? category[0] : category;
+    const pageNum = Array.isArray(page) ? Number(page[0]) : Number(page);
+    const limitNum = Array.isArray(limit) ? Number(limit[0]) : Number(limit);
+    const sortParam = Array.isArray(sort) ? sort[0] : sort;
 
-    // Apply filters
-    if (category) query.category = category;
-
-    if (price_min || price_max) {
-      query.price = {};
-      if (price_min) query.price.$gte = parseInt(price_min as string);
-      if (price_max) query.price.$lte = parseInt(price_max as string);
-    }
-
-    if (search) {
-      query.$or = [{ name: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
-    }
-
-    // Pagination
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
-
-    // Sorting
-    let sortObj: any = {};
-    switch (sort) {
-      case "price_asc":
-        sortObj = { price: 1 };
-        break;
-      case "price_desc":
-        sortObj = { price: -1 };
-        break;
-      case "discount":
-        sortObj = { discount_percentage: -1 };
-        break;
-      case "rating":
-        sortObj = { rating: -1 };
-        break;
-      default:
-        sortObj = { created_at: -1 };
-    }
-
-    const [products, total] = await Promise.all([ProductModel.find(query).sort(sortObj).skip(skip).limit(limitNum), ProductModel.countDocuments(query)]);
+    const { products, total } = await ProductService.getProducts({
+      category: categoryParam as string | undefined,
+      page: pageNum,
+      limit: limitNum,
+      sort: sortParam as any,
+    });
 
     res.json({
       success: true,
-      data: products,
+      products,
       pagination: {
-        total,
         page: pageNum,
         limit: limitNum,
+        total,
         pages: Math.ceil(total / limitNum),
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch products" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get products" });
   }
 }
 
-// Get single product by ID
-export async function getProductById(req: Request, res: Response) {
+export async function getProduct(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-    const product = await ProductModel.findById(id);
+    const product = await ProductService.getProductById(id);
 
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    res.json({ success: true, data: product });
+    res.json({
+      success: true,
+      product,
+    });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch product" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get product" });
   }
 }
 
-// Get all categories
 export async function getCategories(req: Request, res: Response) {
   try {
-    const categories = await CategoryModel.find().sort({ display_order: 1 });
+    const categories = await ProductService.getCategories();
 
     res.json({
       success: true,
-      data: categories,
+      categories,
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch categories" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get categories" });
   }
 }
 
-// Search products
-export async function searchProducts(req: Request, res: Response) {
-  try {
-    const { query } = req.params;
-
-    if (!query || query.length < 2) {
-      return res.json({ success: true, data: [] });
-    }
-
-    const products = await ProductModel.find(
-      { $text: { $search: query } },
-      { score: { $meta: "textScore" } }
-    )
-      .sort({ score: { $meta: "textScore" } })
-      .limit(10);
-
-    res.json({ success: true, data: products });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Search failed" });
-  }
-}
-
-// For admin: Create product
+// Admin: Create product
 export async function createProduct(req: Request, res: Response) {
   try {
-    const { name, description, category, brand, price, discount_percentage, stock, image_url, veg_nonveg, weight } = req.body;
+    const { name, description, price, discount_percentage, stock, category_id, image_urls } = req.body;
 
-    const product = new ProductModel({
+    if (!name || !price || !category_id) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const product = await ProductService.createProduct({
       name,
       description,
-      category,
-      brand,
       price,
       discount_percentage,
       stock,
-      image_url,
-      veg_nonveg,
-      weight,
-      rating: 4.5,
-      reviews: [],
+      category_id,
+      image_urls,
     });
 
-    await product.save();
-
-    res.status(201).json({ success: true, data: product });
+    res.json({
+      success: true,
+      product,
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create product" });
   }
 }
 
-// For admin: Update product
+// Admin: Update product
 export async function updateProduct(req: Request, res: Response) {
   try {
-    const { id } = req.params;
-    const updates = req.body;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { name, description, price, discount_percentage, stock, is_active } = req.body;
 
-    const product = await ProductModel.findByIdAndUpdate(id, updates, { new: true });
+    const product = await ProductService.updateProduct(id, {
+      name,
+      description,
+      price,
+      discount_percentage,
+      stock,
+      is_active,
+    });
 
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    res.json({ success: true, data: product });
+    res.json({
+      success: true,
+      product,
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update product" });
   }
 }
 
-// For admin: Delete product
+// Admin: Delete product
 export async function deleteProduct(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-    const product = await ProductModel.findByIdAndDelete(id);
+    await ProductService.deleteProduct(id);
 
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    res.json({ success: true, message: "Product deleted" });
+    res.json({
+      success: true,
+      message: "Product deleted successfully",
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete product" });
   }

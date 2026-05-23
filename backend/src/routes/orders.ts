@@ -1,29 +1,26 @@
 import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { authMiddleware, adminMiddleware } from '../middleware/auth';
-import {
-  createOrder,
-  getOrderById,
-  getUserOrders,
-  razorpayCreateOrder,
-  razorpayWebhook,
-  updateOrderStatus,
-  getAllOrders,
-} from '../controllers/orderController';
+import type { Request, Response } from "express";
+import { authMiddleware } from '../middleware/auth';
+import * as orderController from '../controllers/orderController';
 
 const router = express.Router();
 
-// User routes
-router.post("/create", authMiddleware, createOrder);
-router.post("/razorpay/create-order", authMiddleware, razorpayCreateOrder);
-router.get("/:id", authMiddleware, getOrderById);
-router.get("/user/:userId", authMiddleware, getUserOrders);
+// Create order
+router.post("/create", authMiddleware, orderController.createOrder);
 
-// Webhook (no auth required)
-router.post("/razorpay/webhook", razorpayWebhook);
+// Get user's orders
+router.get("/", authMiddleware, orderController.getOrders);
 
-// Admin routes
-router.get("/admin/all", authMiddleware, adminMiddleware, getAllOrders);
-router.put("/:id/status", authMiddleware, adminMiddleware, updateOrderStatus);
+// Get specific order
+router.get("/:id", authMiddleware, orderController.getOrder);
+
+// Create payment
+router.post("/payment/create", authMiddleware, orderController.createPayment);
+
+// Verify payment
+router.post("/payment/verify", authMiddleware, orderController.verifyPayment);
+
+// Update order status (admin)
+router.put("/:id/status", authMiddleware, orderController.updateOrderStatus);
 
 export default router;

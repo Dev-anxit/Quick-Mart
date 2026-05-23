@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id            String   @id @default(cuid())
+  uid           String   @unique @index
+  email         String   @unique @db.VarChar(255)
+  phone         String   @default("") @db.VarChar(20)
+  name          String   @default("") @db.VarChar(255)
+  avatar        String?  @db.Text
+  phone_verified Boolean @default(false)
+  otp           String?  @db.VarChar(10)
+  otp_expiry    DateTime?
+  created_at    DateTime @default(now()) @index
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  addresses     Address[]
+  orders        Order[]
+  reviews       Review[]
+
+  @@index([created_at])
+  @@map("users")
+}
+
+// Category model
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  image_url   String?  @db.Text
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  products    Product[]
+
+  @@map("categories")
+}
+
+// Product model
+model Product {
+  id            String   @id @default(cuid())
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  price         Float
+  discount_percentage Float @default(0)
+  stock         Int      @default(0)
+  rating        Float    @default(0)
+  image_urls    String[] @default([])
+  category_id   String
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  category      Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  order_items   OrderItem[]
+  reviews       Review[]
+
+  @@index([category_id])
+  @@index([created_at])
+  @@map("products")
+}
+
+// Address model
+model Address {
+  id          String   @id @default(cuid())
+  user_id     String
+  type        String   @db.VarChar(50) // home, work, other
+  street      String   @db.VarChar(255)
+  city        String   @db.VarChar(100)
+  state       String   @db.VarChar(100)
+  postal_code String   @db.VarChar(10)
+  latitude    Float
+  longitude   Float
+  is_default  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("addresses")
+}
+
+// Order model
+model Order {
+  id              String   @id @default(cuid())
+  user_id         String
+  order_number    String   @unique @index
+  total_amount    Float
+  discount_amount Float    @default(0)
+  delivery_fee    Float    @default(50)
+  tax_amount      Float    @default(0)
+  payment_method  String   @db.VarChar(50) // razorpay, wallet, etc
+  payment_id      String?  @db.VarChar(255)
+  status          String   @default("pending") @db.VarChar(50) // pending, confirmed, preparing, ready, out_for_delivery, delivered, cancelled
+  notes           String?  @db.Text
+  delivery_address String  @db.Text
+  created_at      DateTime @default(now()) @index
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  rider           Rider?   @relation("RiderOrders")
+  tracking        OrderTracking?
+
+  @@index([user_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("orders")
+}
+
+// OrderItem model
+model OrderItem {
+  id        String   @id @default(cuid())
+  order_id  String
+  product_id String
+  quantity  Int
+  price     Float
+  discount  Float    @default(0)
+
+  // Relations
+  order     Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
+
+  @@index([order_id])
+  @@index([product_id])
+  @@map("order_items")
+}
+
+// Rider model
+model Rider {
+  id              String   @id @default(cuid())
+  name            String   @db.VarChar(255)
+  phone           String   @unique @db.VarChar(20)
+  email           String   @unique @db.VarChar(255)
+  vehicle_type    String   @db.VarChar(50)
+  license_number  String   @unique @db.VarChar(100)
+  status          String   @default("offline") @db.VarChar(50) // offline, online, on_delivery
+  total_deliveries Int    @default(0)
+  rating          Float    @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  orders          Order[]  @relation("RiderOrders")
+  locations       RiderLocation[]
+
+  @@map("riders")
+}
+
+// RiderLocation model
+model RiderLocation {
+  id        String   @id @default(cuid())
+  rider_id  String
+  latitude  Float
+  longitude Float
+  created_at DateTime @default(now())
+
+  // Relations
+  rider     Rider    @relation(fields: [rider_id], references: [id], onDelete: Cascade)
+
+  @@index([rider_id])
+  @@index([created_at])
+  @@map("rider_locations")
+}
+
+// OrderTracking model
+model OrderTracking {
+  id        String   @id @default(cuid())
+  order_id  String   @unique
+  rider_id  String?  @db.VarChar(255)
+  status    String   @db.VarChar(50)
+  latitude  Float?
+  longitude Float?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  order     Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
+  @@map("order_tracking")
+}
+
+// Review model
+model Review {
+  id        String   @id @default(cuid())
+  user_id   String
+  product_id String
+  rating    Int      @db.SmallInt
+  comment   String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([product_id])
+  @@map("reviews")
+}
+
+// Promo model
+model Promo {
+  id          String   @id @default(cuid())
+  code        String   @unique @db.VarChar(50)
+  discount_percentage Float
+  max_discount Float?
+  min_purchase Float?
+  usage_limit Int?
+  times_used  Int      @default(0)
+  is_active   Boolean  @default(true)
+  expires_at  DateTime?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("promos")
+}

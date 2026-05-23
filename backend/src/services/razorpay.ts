@@ -4,16 +4,16 @@ import crypto from "crypto";
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 
-let razorpayInstance: Razorpay | null = null;
+let razorpayClient: Razorpay | null = null;
 
 function getRazorpayInstance() {
-  if (!razorpayInstance && RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-    razorpayInstance = new Razorpay({
+  if (!razorpayClient && RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
+    razorpayClient = new Razorpay({
       key_id: RAZORPAY_KEY_ID,
       key_secret: RAZORPAY_KEY_SECRET,
     });
   }
-  return razorpayInstance;
+  return razorpayClient;
 }
 
 export async function createRazorpayOrder(amount: number, orderId: string, customerId?: string) {
@@ -92,3 +92,5 @@ export async function fetchPaymentDetails(paymentId: string) {
     throw error;
   }
 }
+
+export { getRazorpayInstance as razorpayInstance };

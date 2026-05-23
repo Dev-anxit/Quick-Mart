@@ -1,13 +1,13 @@
 export interface User {
-  _id?: string;
+  id?: string;
   uid: string;
   email: string;
   phone: string;
   name: string;
   avatar?: string;
   phone_verified: boolean;
-  otp?: string;
-  otp_expiry?: Date;
+  otp?: string | null;
+  otp_expiry?: Date | null;
   created_at: Date;
   updated_at: Date;
 }

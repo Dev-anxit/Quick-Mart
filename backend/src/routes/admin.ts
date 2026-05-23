@@ -1,38 +1,25 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { authMiddleware, adminMiddleware } from '../middleware/auth';
-import {
-  getDashboardMetrics,
-  getAllOrders,
-  getAllProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  getUsers,
-  getLowStockAlerts,
-  getRevenueTrends,
-} from '../controllers/adminController';
+import express from 'express';
+import * as adminController from '../controllers/adminController';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
-// Apply auth and admin middleware to all routes
-router.use(authMiddleware, adminMiddleware);
+// Get dashboard stats
+router.get('/stats', authMiddleware, adminController.getDashboardStats);
 
-// Dashboard
-router.get("/dashboard", getDashboardMetrics);
-router.get("/revenue-trends", getRevenueTrends);
+// Get all orders
+router.get('/orders', authMiddleware, adminController.getAllOrders);
 
-// Orders
-router.get("/orders", getAllOrders);
+// Get users
+router.get('/users', authMiddleware, adminController.getUsers);
 
-// Products
-router.get("/products", getAllProducts);
-router.post("/products", createProduct);
-router.put("/products/:id", updateProduct);
-router.delete("/products/:id", deleteProduct);
-router.get("/low-stock", getLowStockAlerts);
+// Get products
+router.get('/products', authMiddleware, adminController.getAdminProducts);
 
-// Users
-router.get("/users", getUsers);
+// Update order status
+router.put('/orders/:orderId/status', authMiddleware, adminController.updateOrderStatus);
+
+// Assign rider to order
+router.post('/orders/:orderId/assign-rider', authMiddleware, adminController.assignRider);
 
 export default router;

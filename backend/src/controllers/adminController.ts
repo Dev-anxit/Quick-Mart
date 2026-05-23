@@ -1,324 +1,160 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { OrderModel } from '../models/Order';
-import { ProductModel } from '../models/Product';
-import { UserModel } from '../models/User';
+import type { Request, Response } from "express";
+import { OrderService } from '../services/orderService';
+import { ProductService } from '../services/productService';
+import { UserService } from '../services/userService';
+import { prisma } from '../config/prisma';
 
-// Get dashboard metrics
-export async function getDashboardMetrics(req: Request, res: Response) {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Revenue calculation
-    const todayRevenue = await OrderModel.aggregate([
-      {
-        $match: {
-          created_at: { $gte: today },
-          status: { $in: ["confirmed", "delivered"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$total_amount" },
-        },
-      },
-    ]);
-
-    const thisMonthRevenue = await OrderModel.aggregate([
-      {
-        $match: {
-          created_at: {
-            $gte: new Date(today.getFullYear(), today.getMonth(), 1),
-          },
-          status: { $in: ["confirmed", "delivered"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$total_amount" },
-        },
-      },
-    ]);
-
-    // Order counts
-    const totalOrders = await OrderModel.countDocuments();
-    const todayOrders = await OrderModel.countDocuments({ created_at: { $gte: today } });
-    const pendingOrders = await OrderModel.countDocuments({ status: "payment_pending" });
-    const confirmedOrders = await OrderModel.countDocuments({ status: "confirmed" });
-    const deliveredOrders = await OrderModel.countDocuments({ status: "delivered" });
-
-    // Product stats
-    const totalProducts = await ProductModel.countDocuments();
-    const lowStockProducts = await ProductModel.countDocuments({ stock: { $lt: 20 } });
-
-    const topProducts = await ProductModel.find()
-      .sort({ rating: -1 })
-      .limit(5)
-      .select("name rating price stock");
-
-    res.json({
-      success: true,
-      data: {
-        total_revenue: thisMonthRevenue[0]?.total || 0,
-        today_revenue: todayRevenue[0]?.total || 0,
-        total_orders: totalOrders,
-        today_orders: todayOrders,
-        pending_orders: pendingOrders,
-        confirmed_orders: confirmedOrders,
-        delivered_orders: deliveredOrders,
-        active_products: totalProducts,
-        low_stock: lowStockProducts,
-        top_products: topProducts,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch metrics" });
-  }
-}
-
-// Get all orders (admin)
+// Get all orders
 export async function getAllOrders(req: Request, res: Response) {
   try {
-    const { page = "1", limit = "20", status } = req.query;
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
+    const { page = 1, status } = req.query;
 
-    let query: any = {};
-    if (status) query.status = status;
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
 
     const [orders, total] = await Promise.all([
-      OrderModel.find(query)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      OrderModel.countDocuments(query),
+      prisma.order.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip: (Number(page) - 1) * 20,
+        take: 20,
+        include: {
+          user: true,
+          items: {
+            include: { product: true },
+          },
+        },
+      }),
+      prisma.order.count({ where }),
     ]);
 
     res.json({
       success: true,
-      data: orders,
+      orders,
       pagination: {
+        page: Number(page),
         total,
-        page: pageNum,
-        limit: limitNum,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / 20),
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch orders" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get orders" });
   }
 }
 
-// Get all products (admin)
-export async function getAllProducts(req: Request, res: Response) {
+// Get dashboard stats
+export async function getDashboardStats(req: Request, res: Response) {
   try {
-    const { page = "1", limit = "20", category, search } = req.query;
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
-
-    let query: any = {};
-    if (category) query.category = category;
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(query)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      ProductModel.countDocuments(query),
+    const [totalUsers, totalOrders, totalRevenue, topProducts] = await Promise.all([
+      prisma.user.count(),
+      prisma.order.count(),
+      prisma.order.aggregate({
+        _sum: {
+          total_amount: true,
+        },
+      }),
+      prisma.product.findMany({
+        orderBy: { rating: 'desc' },
+        take: 5,
+      }),
     ]);
 
     res.json({
       success: true,
-      data: products,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        pages: Math.ceil(total / limitNum),
+      stats: {
+        totalUsers,
+        totalOrders,
+        totalRevenue: totalRevenue._sum.total_amount || 0,
+        topProducts,
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch products" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get stats" });
   }
 }
 
-// Create product
-export async function createProduct(req: Request, res: Response) {
-  try {
-    const { name, description, category, brand, price, discount_percentage, stock, image_url, veg_nonveg, weight } = req.body;
-
-    if (!name || !category || !price || image_url === undefined || veg_nonveg === undefined || !weight) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const product = new ProductModel({
-      name,
-      description: description || "",
-      category,
-      brand: brand || "",
-      price,
-      discount_percentage: discount_percentage || 0,
-      stock: stock || 0,
-      image_url,
-      veg_nonveg,
-      weight,
-      rating: 4.5,
-      reviews: [],
-    });
-
-    await product.save();
-
-    res.status(201).json({
-      success: true,
-      data: product,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create product" });
-  }
-}
-
-// Update product
-export async function updateProduct(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    // Don't allow modifying system fields
-    delete updates._id;
-    delete updates.created_at;
-
-    const product = await ProductModel.findByIdAndUpdate(id, { ...updates, updated_at: new Date() }, { new: true });
-
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    res.json({ success: true, data: product });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update product" });
-  }
-}
-
-// Delete product
-export async function deleteProduct(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-
-    const product = await ProductModel.findByIdAndDelete(id);
-
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    res.json({ success: true, message: "Product deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete product" });
-  }
-}
-
-// Get users for analytics
+// Get users
 export async function getUsers(req: Request, res: Response) {
   try {
-    const { page = "1", limit = "20" } = req.query;
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
+    const { page = 1 } = req.query;
 
     const [users, total] = await Promise.all([
-      UserModel.find()
-        .select("-__v")
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      UserModel.countDocuments(),
+      prisma.user.findMany({
+        orderBy: { created_at: 'desc' },
+        skip: (Number(page) - 1) * 20,
+        take: 20,
+      }),
+      prisma.user.count(),
     ]);
 
     res.json({
       success: true,
-      data: users,
+      users,
       pagination: {
+        page: Number(page),
         total,
-        page: pageNum,
-        limit: limitNum,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / 20),
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch users" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get users" });
   }
 }
 
-// Get low stock alerts
-export async function getLowStockAlerts(req: Request, res: Response) {
+// Get products
+export async function getAdminProducts(req: Request, res: Response) {
   try {
-    const { threshold = "20" } = req.query;
+    const { page = 1 } = req.query;
 
-    const products = await ProductModel.find({
-      stock: { $lt: parseInt(threshold as string) },
-    })
-      .sort({ stock: 1 })
-      .select("name stock category price")
-      .lean();
+    const { products, total } = await ProductService.getProducts({
+      page: Number(page),
+      limit: 20,
+    });
 
     res.json({
       success: true,
-      data: products,
-      count: products.length,
+      products,
+      pagination: {
+        page: Number(page),
+        total,
+        pages: Math.ceil(total / 20),
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch alerts" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get products" });
   }
 }
 
-// Get revenue trends
-export async function getRevenueTrends(req: Request, res: Response) {
+// Update order status
+export async function updateOrderStatus(req: Request, res: Response) {
   try {
-    const { days = "30" } = req.query;
-    const daysCount = parseInt(days as string);
+    const { orderId, status } = req.body;
 
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysCount);
-
-    const trends = await OrderModel.aggregate([
-      {
-        $match: {
-          created_at: { $gte: startDate },
-          status: { $in: ["confirmed", "delivered"] },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$created_at" },
-          },
-          revenue: { $sum: "$total_amount" },
-          orders: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
+    await OrderService.updateOrderStatus(orderId, status);
 
     res.json({
       success: true,
-      data: trends,
+      message: "Order status updated",
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch trends" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update order" });
+  }
+}
+
+// Assign rider
+export async function assignRider(req: Request, res: Response) {
+  try {
+    const { orderId, riderId } = req.body;
+
+    await OrderService.assignRider(orderId, riderId);
+
+    res.json({
+      success: true,
+      message: "Rider assigned",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to assign rider" });
   }
 }

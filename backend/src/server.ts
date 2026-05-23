@@ -1,8 +1,7 @@
 import http from "http";
 import { Server as SocketIOServer } from "socket.io";
 import app from './app';
-import { connectMongoDB } from './config/mongodb';
-import { initRedis } from './config/redis';
+import { connectDatabase, disconnectDatabase } from './config/prisma';
 
 const PORT = process.env.PORT || 5000;
 
@@ -67,11 +66,8 @@ io.of("/orders").on("connection", (socket) => {
 // Initialize connections
 async function startServer() {
   try {
-    // Connect to MongoDB
-    await connectMongoDB();
-
-    // Connect to Redis
-    await initRedis();
+    // Connect to Supabase/PostgreSQL via Prisma
+    await connectDatabase();
 
     // Start server
     server.listen(PORT, () => {
@@ -79,6 +75,7 @@ async function startServer() {
 ╔════════════════════════════════════════╗
 ║     🚀 E-Commerce Backend Started     ║
 ║          Port: ${PORT}                  ║
+║     Database: PostgreSQL (Supabase)   ║
 ║     Environment: ${process.env.NODE_ENV}       ║
 ╚════════════════════════════════════════╝
       `);
@@ -92,8 +89,9 @@ async function startServer() {
 startServer();
 
 // Graceful shutdown
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
+  await disconnectDatabase();
   server.close(() => {
     console.log("Server closed");
     process.exit(0);

@@ -1,308 +1,178 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { OrderModel } from '../models/Order';
-import { PromoModel } from '../models/Promo';
-import { UserModel } from '../models/User';
+import type { Request, Response } from "express";
+import { OrderService } from '../services/orderService';
+import { razorpayInstance } from '../services/razorpay';
 
-// Generate unique order number
-function generateOrderNumber(): string {
-  const date = new Date();
-  const timestamp = date.getTime().toString().slice(-8);
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `ORD-${timestamp}-${random}`;
-}
-
-// Create order (payment_pending status)
 export async function createOrder(req: Request, res: Response) {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
+    const userId = (req as any).userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { items, delivery_address, scheduled_time, payment_method, promo_code } = req.body;
+    const { items, totalAmount, discountAmount = 0, deliveryFee = 50, paymentMethod, deliveryAddress } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ error: "Cart is empty" });
+      return res.status(400).json({ error: "Order items are required" });
     }
 
-    // Calculate totals
-    let subtotal = items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
-
-    let discount = 0;
-    if (promo_code) {
-      const promo = await PromoModel.findOne({ code: promo_code.toUpperCase(), is_active: true });
-      if (promo && promo.valid_until > new Date() && promo.used_count < promo.max_uses && subtotal >= promo.min_cart_value) {
-        discount = promo.discount_type === "percentage" ? (subtotal * promo.discount_value) / 100 : promo.discount_value;
-      }
-    }
-
-    const delivery_fee = subtotal > 500 ? 0 : 50;
-    const platform_fee = Math.ceil(subtotal * 0.05);
-    const tax = Math.ceil((subtotal - discount + delivery_fee) * 0.05);
-
-    const total_amount = subtotal - discount + delivery_fee + platform_fee + tax;
-
-    // Create order
-    const order = new OrderModel({
-      user_id: req.user.uid,
-      order_number: generateOrderNumber(),
+    const order = await OrderService.createOrder({
+      userId,
       items,
-      total_amount,
-      discount,
-      delivery_fee,
-      platform_fee,
-      tax,
-      status: "payment_pending",
-      payment_method,
-      delivery_address,
-      scheduled_time,
+      totalAmount,
+      discountAmount,
+      deliveryFee,
+      paymentMethod,
+      deliveryAddress,
     });
 
-    await order.save();
-
-    res.status(201).json({
+    res.json({
       success: true,
-      data: {
-        order_id: order._id,
-        order_number: order.order_number,
-        total_amount: order.total_amount,
-      },
+      order,
     });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create order" });
   }
 }
 
-// Get order by ID
-export async function getOrderById(req: Request, res: Response) {
+export async function getOrders(req: Request, res: Response) {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
+    const userId = (req as any).userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { id } = req.params;
-    const order = await OrderModel.findById(id);
-
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    // Check authorization - user can only see their own orders
-    if (order.user_id !== req.user.uid && req.user.role !== "admin") {
-      return res.status(403).json({ error: "Not authorized" });
-    }
-
-    res.json({ success: true, data: order });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch order" });
-  }
-}
-
-// Get user's order history
-export async function getUserOrders(req: Request, res: Response) {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
-    }
-
-    const { page = "1", limit = "10" } = req.query;
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(50, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
-
-    const [orders, total] = await Promise.all([
-      OrderModel.find({ user_id: req.user.uid })
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limitNum),
-      OrderModel.countDocuments({ user_id: req.user.uid }),
-    ]);
+    const { page = 1 } = req.query;
+    const { orders, total } = await OrderService.getUserOrders(userId, Number(page));
 
     res.json({
       success: true,
-      data: orders,
+      orders,
       pagination: {
+        page: Number(page),
         total,
-        page: pageNum,
-        limit: limitNum,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / 20),
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch orders" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get orders" });
   }
 }
 
-// Create Razorpay order
-export async function razorpayCreateOrder(req: Request, res: Response) {
+export async function getOrder(req: Request, res: Response) {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
+    const userId = (req as any).userId;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { order_id, amount } = req.body;
-
-    // Import Razorpay service
-    const { createRazorpayOrder } = await import("../services/razorpay.js");
-
-    const razorpayOrder = await createRazorpayOrder(amount, order_id, req.user.uid);
-
-    // Update order with razorpay_order_id
-    await OrderModel.findByIdAndUpdate(order_id, {
-      razorpay_order_id: razorpayOrder.razorpay_order_id,
-    });
-
-    res.json({
-      success: true,
-      ...razorpayOrder,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create Razorpay order" });
-  }
-}
-
-// Razorpay webhook handler
-export async function razorpayWebhook(req: Request, res: Response) {
-  try {
-    const { event, payload } = req.body;
-
-    // Verify webhook signature
-    const { verifyRazorpaySignature } = await import("../services/razorpay.js");
-
-    const paymentEntity = payload?.payment?.entity;
-    if (!paymentEntity) {
-      return res.status(400).json({ error: "Invalid webhook payload" });
-    }
-
-    // Verify signature: orderId|paymentId|signature
-    const isValid = verifyRazorpaySignature(
-      paymentEntity.order_id,
-      paymentEntity.id,
-      req.headers["x-razorpay-signature"] as string
-    );
-
-    if (!isValid) {
-      console.warn("Invalid Razorpay webhook signature");
-      return res.status(403).json({ error: "Invalid signature" });
-    }
-
-    if (event === "payment.authorized" || event === "payment.captured") {
-      const order = await OrderModel.findOneAndUpdate(
-        { razorpay_order_id: paymentEntity.order_id },
-        {
-          status: "confirmed",
-          payment_id: paymentEntity.id,
-          updated_at: new Date(),
-        },
-        { new: true }
-      );
-
-      if (order) {
-        // Emit Socket.io event to notify customer
-        const io = (global as any).io;
-        if (io) {
-          io.of("/orders")
-            .to(`order_${order._id}`)
-            .emit("order_confirmed", {
-              order_id: order._id,
-              status: "confirmed",
-              message: "Payment successful! Your order is confirmed.",
-            });
-        }
-      }
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Webhook error:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Webhook failed" });
-  }
-}
-
-// Admin: Update order status
-export async function updateOrderStatus(req: Request, res: Response) {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    const { id } = req.params;
-    const { status, rider_id, estimated_delivery_time } = req.body;
-
-    const validStatuses = ["confirmed", "packed", "picked_up", "on_way", "delivered", "cancelled"];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
-    }
-
-    const updateData: any = {
-      status,
-      updated_at: new Date(),
-    };
-
-    if (rider_id) updateData.rider_id = rider_id;
-    if (estimated_delivery_time) updateData.estimated_delivery_time = new Date(estimated_delivery_time);
-    if (status === "delivered") updateData.delivered_at = new Date();
-
-    const order = await OrderModel.findByIdAndUpdate(id, updateData, { new: true });
+    const order = await OrderService.getOrderById(id);
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Emit Socket.io event to notify customer
+    // Verify ownership
+    if (order.user_id !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get order" });
+  }
+}
+
+export async function createPayment(req: Request, res: Response) {
+  try {
+    const { orderId, amount } = req.body;
+    const orderIdStr = Array.isArray(orderId) ? orderId[0] : orderId;
+
+    const options = {
+      amount: Math.round(amount * 100),
+      currency: "INR",
+      receipt: orderIdStr,
+    };
+
+    const razorpay = require('razorpay');
+    const instance = new razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
+    const order = await instance.orders.create(options);
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      key: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create payment" });
+  }
+}
+
+export async function verifyPayment(req: Request, res: Response) {
+  try {
+    const { orderId, paymentId, signature } = req.body;
+    const orderIdStr = Array.isArray(orderId) ? orderId[0] : orderId;
+    const paymentIdStr = Array.isArray(paymentId) ? paymentId[0] : paymentId;
+
+    // Verify signature
+    const body = orderIdStr + "|" + paymentIdStr;
+    const crypto = require("crypto");
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      return res.status(400).json({ error: "Invalid signature" });
+    }
+
+    // Update order with payment ID
+    await OrderService.updatePaymentId(orderIdStr, paymentIdStr);
+
+    res.json({
+      success: true,
+      message: "Payment verified successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Payment verification failed" });
+  }
+}
+
+export async function updateOrderStatus(req: Request, res: Response) {
+  try {
+    const { orderId, status } = req.body;
+
+    if (!orderId || !status) {
+      return res.status(400).json({ error: "Order ID and status are required" });
+    }
+
+    await OrderService.updateOrderStatus(orderId, status);
+
+    // Emit socket event for real-time update
     const io = (global as any).io;
     if (io) {
       io.of("/orders")
-        .to(`order_${id}`)
-        .emit("order_status_updated", {
-          order_id: order._id,
-          status: order.status,
-          rider_id: order.rider_id,
-          estimated_delivery_time: order.estimated_delivery_time,
+        .to(`order_${orderId}`)
+        .emit("order_status_changed", {
+          orderId,
+          status,
+          timestamp: new Date(),
         });
     }
 
-    res.json({ success: true, data: order });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update order" });
-  }
-}
-
-// Admin: Get all orders
-export async function getAllOrders(req: Request, res: Response) {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    const { page = "1", limit = "20", status } = req.query;
-    const pageNum = Math.max(1, parseInt(page as string));
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
-
-    let query: any = {};
-    if (status) query.status = status;
-
-    const [orders, total] = await Promise.all([
-      OrderModel.find(query)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limitNum),
-      OrderModel.countDocuments(query),
-    ]);
-
     res.json({
       success: true,
-      data: orders,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        pages: Math.ceil(total / limitNum),
-      },
+      message: "Order status updated",
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch orders" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update order" });
   }
 }
