@@ -8,11 +8,11 @@ const router = express.Router();
 // Get all products with filters
 router.get("/", productController.getProducts);
 
+// Get categories (must come before /:id to avoid matching "categories" as an ID)
+router.get("/categories", productController.getCategories);
+
 // Get product by ID
 router.get("/:id", productController.getProduct);
-
-// Get categories
-router.get("/categories", productController.getCategories);
 
 // Admin: Create product
 router.post("/", authMiddleware, productController.createProduct);
