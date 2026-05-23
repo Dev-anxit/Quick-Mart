@@ -17,13 +17,20 @@ export const authService = {
       if (response.data.success && response.data.data) {
         const { token, ...userData } = response.data.data;
 
+        // Convert string dates to Date objects
+        const user = {
+          ...userData,
+          createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+          updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+        };
+
         // Store JWT and user in auth store
-        useAuthStore.getState().login(userData, token);
+        useAuthStore.getState().login(user, token);
 
         // Update API client with new token
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        return { user: userData, token };
+        return { user, token };
       }
 
       throw new Error('Token verification failed');
@@ -77,7 +84,12 @@ export const authService = {
     );
 
     if (response.data.success) {
-      useAuthStore.getState().updateProfile(response.data.data);
+      const user = {
+        ...response.data.data,
+        createdAt: response.data.data.createdAt ? new Date(response.data.data.createdAt) : new Date(),
+        updatedAt: response.data.data.updatedAt ? new Date(response.data.data.updatedAt) : new Date(),
+      };
+      useAuthStore.getState().updateProfile(user);
     }
 
     return response.data.data;
@@ -144,13 +156,20 @@ export const authService = {
       if (response.data.success && response.data.data) {
         const { token, ...userData } = response.data.data;
 
+        // Convert string dates to Date objects
+        const user = {
+          ...userData,
+          createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+          updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+        };
+
         // Store JWT and user in auth store
-        useAuthStore.getState().login(userData, token);
+        useAuthStore.getState().login(user, token);
 
         // Update API client with new token
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        return { user: userData, token };
+        return { user, token };
       }
 
       throw new Error(response.data.message || 'OTP verification failed');

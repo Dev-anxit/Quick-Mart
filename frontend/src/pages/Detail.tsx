@@ -17,7 +17,6 @@ export default function Detail() {
   const [relatedProducts, setRelatedProducts] = useState<ProductResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
     if (!isLoggedIn) {

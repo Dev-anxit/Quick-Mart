@@ -159,7 +159,7 @@ export default function Home() {
   useEffect(() => {
     if (!isLoggedIn) return;
     setIsLoading(true);
-    productService.getProducts({ category: selectedCategory, page: 1, limit: 40 })
+    productService.getProducts({ category: selectedCategory || undefined, page: 1, limit: 40 })
       .then(r => setProducts(r.data || []))
       .catch(() => setProducts([]))
       .finally(() => setIsLoading(false));

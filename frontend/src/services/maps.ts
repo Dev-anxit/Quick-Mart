@@ -35,7 +35,7 @@ export async function loadGoogleMapsScript(apiKey: string): Promise<boolean> {
 export function initPlacesAutocomplete(
   inputElement: HTMLInputElement,
   onPlaceSelect: (place: any) => void
-): google.maps.places.Autocomplete | null {
+): any {
   if (!window.google?.maps?.places) {
     console.error('Google Maps Places API not loaded');
     return null;
@@ -96,7 +96,7 @@ export function initMap(
   lat: number,
   lng: number,
   title: string
-): google.maps.Map {
+): any {
   const map = new window.google.maps.Map(mapElement, {
     center: { lat, lng },
     zoom: 15,
@@ -115,8 +115,8 @@ export function initMap(
  * Animate marker movement on map
  */
 export function animateMarker(
-  map: google.maps.Map,
-  marker: google.maps.Marker,
+  map: any,
+  marker: any,
   targetLat: number,
   targetLng: number,
   duration: number = 1000

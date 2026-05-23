@@ -74,7 +74,12 @@ export default function Track() {
 
   useEffect(() => {
     if (!orderId) return;
-    const unsub = socketService.onRiderLocationUpdate((data) => setRiderLocation(data.location));
+    const unsub = socketService.onRiderLocationUpdate((data) => {
+      setRiderLocation({
+        ...data.location,
+        timestamp: new Date().toISOString(),
+      });
+    });
     return () => { if (unsub) unsub(); };
   }, [orderId]);
 

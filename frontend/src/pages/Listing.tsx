@@ -14,7 +14,7 @@ export default function Listing() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [priceMin, setPriceMin] = useState<number>(0);
   const [priceMax, setPriceMax] = useState<number>(1000);
-  const [sortBy, setSortBy] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'rating' | 'discount' | ''>('');
   const [page, setPage] = useState(1);
 
   // Fetch categories
@@ -135,15 +135,15 @@ export default function Listing() {
               <select
                 value={sortBy}
                 onChange={(e) => {
-                  setSortBy(e.target.value);
+                  setSortBy(e.target.value as '' | 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'discount');
                   setPage(1);
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-violet-600"
               >
                 <option value="">Relevance</option>
-                <option value="price">Price: Low to High</option>
-                <option value="-price">Price: High to Low</option>
-                <option value="-rating">Rating</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="rating">Rating</option>
               </select>
             </div>
 

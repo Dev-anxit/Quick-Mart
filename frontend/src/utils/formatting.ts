@@ -58,7 +58,11 @@ export const formatters = {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
 
-    return formatDateOnly(d);
+    return new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(d);
   },
 
   // Format countdown timer (MM:SS)
