@@ -13,7 +13,7 @@ datasource db {
 // User model for authentication
 model User {
   id            String   @id @default(cuid())
-  uid           String   @unique @index
+  uid           String   @unique
   email         String   @unique @db.VarChar(255)
   phone         String   @default("") @db.VarChar(20)
   name          String   @default("") @db.VarChar(255)
@@ -21,7 +21,7 @@ model User {
   phone_verified Boolean @default(false)
   otp           String?  @db.VarChar(10)
   otp_expiry    DateTime?
-  created_at    DateTime @default(now()) @index
+  created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
   // Relations
@@ -29,6 +29,7 @@ model User {
   orders        Order[]
   reviews       Review[]
 
+  @@index([uid])
   @@index([created_at])
   @@map("users")
 }
@@ -100,27 +101,27 @@ model Address {
 model Order {
   id              String   @id @default(cuid())
   user_id         String
-  order_number    String   @unique @index
+  order_number    String   @unique
   total_amount    Float
   discount_amount Float    @default(0)
   delivery_fee    Float    @default(50)
   tax_amount      Float    @default(0)
-  payment_method  String   @db.VarChar(50) // razorpay, wallet, etc
+  payment_method  String   @db.VarChar(50)
   payment_id      String?  @db.VarChar(255)
-  status          String   @default("pending") @db.VarChar(50) // pending, confirmed, preparing, ready, out_for_delivery, delivered, cancelled
+  status          String   @default("pending") @db.VarChar(50)
   notes           String?  @db.Text
   delivery_address String  @db.Text
-  created_at      DateTime @default(now()) @index
+  created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   // Relations
   user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   items           OrderItem[]
-  rider           Rider?   @relation("RiderOrders")
   tracking        OrderTracking?
 
   @@index([user_id])
   @@index([status])
+  @@index([order_number])
   @@index([created_at])
   @@map("orders")
 }
@@ -151,14 +152,13 @@ model Rider {
   email           String   @unique @db.VarChar(255)
   vehicle_type    String   @db.VarChar(50)
   license_number  String   @unique @db.VarChar(100)
-  status          String   @default("offline") @db.VarChar(50) // offline, online, on_delivery
+  status          String   @default("offline") @db.VarChar(50)
   total_deliveries Int    @default(0)
   rating          Float    @default(0)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   // Relations
-  orders          Order[]  @relation("RiderOrders")
   locations       RiderLocation[]
 
   @@map("riders")

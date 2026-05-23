@@ -1,45 +1,42 @@
-import { prisma } from '../config/prisma';
+import { prisma } from '../src/config/prisma';
 
 async function seed() {
   console.log('🌱 Starting database seed...');
 
   try {
+    // Clear existing data
+    await prisma.product.deleteMany();
+    await prisma.category.deleteMany();
+    await prisma.promo.deleteMany();
+
     // Create categories
     const categories = await Promise.all([
-      prisma.category.upsert({
-        where: { name: 'Vegetables' },
-        update: {},
-        create: {
+      prisma.category.create({
+        data: {
           name: 'Vegetables',
           description: 'Fresh vegetables',
           image_url: 'https://via.placeholder.com/300?text=Vegetables',
           is_active: true,
         },
       }),
-      prisma.category.upsert({
-        where: { name: 'Fruits' },
-        update: {},
-        create: {
+      prisma.category.create({
+        data: {
           name: 'Fruits',
           description: 'Fresh fruits',
           image_url: 'https://via.placeholder.com/300?text=Fruits',
           is_active: true,
         },
       }),
-      prisma.category.upsert({
-        where: { name: 'Dairy' },
-        update: {},
-        create: {
+      prisma.category.create({
+        data: {
           name: 'Dairy',
           description: 'Dairy products',
           image_url: 'https://via.placeholder.com/300?text=Dairy',
           is_active: true,
         },
       }),
-      prisma.category.upsert({
-        where: { name: 'Bakery' },
-        update: {},
-        create: {
+      prisma.category.create({
+        data: {
           name: 'Bakery',
           description: 'Bakery items',
           image_url: 'https://via.placeholder.com/300?text=Bakery',
@@ -110,10 +107,8 @@ async function seed() {
 
     await Promise.all(
       products.map((product) =>
-        prisma.product.upsert({
-          where: { name: product.name },
-          update: {},
-          create: product,
+        prisma.product.create({
+          data: product,
         })
       )
     );
@@ -121,10 +116,8 @@ async function seed() {
     console.log('✅ Products created');
 
     // Create promo codes
-    await prisma.promo.upsert({
-      where: { code: 'WELCOME10' },
-      update: {},
-      create: {
+    await prisma.promo.create({
+      data: {
         code: 'WELCOME10',
         discount_percentage: 10,
         max_discount: 100,
