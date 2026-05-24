@@ -1,5 +1,6 @@
 import apiClient from './api';
-import type { ProductFilters, PaginatedResponse, ProductResponse, CategoryResponse } from '../types/api';
+import type { ProductFilters, PaginatedResponse, ProductResponse } from '../types/api';
+import { normalizeProduct, normalizeCategories } from '../utils/productNormalizer';
 
 export const productService = {
   // Get products with filters
@@ -14,26 +15,41 @@ export const productService = {
     params.append('page', (filters.page || 1).toString());
     params.append('limit', (filters.limit || 20).toString());
 
-    const response = await apiClient.get<PaginatedResponse<ProductResponse>>(
+    const response = await apiClient.get<any>(
       `/products?${params.toString()}`
     );
-    return response.data;
+
+    // Handle both API response formats
+    const data = response.data;
+    const products = (data.products || data.data || []).map(normalizeProduct);
+    const pagination = data.pagination || {};
+
+    return {
+      ...data,
+      data: products,
+      products,
+      pagination
+    };
   },
 
   // Get single product by ID
   getProductById: async (id: string) => {
-    const response = await apiClient.get<{ success: boolean; data: ProductResponse }>(
+    const response = await apiClient.get<any>(
       `/products/${id}`
     );
-    return response.data.data;
+    const data = response.data;
+    const product = data.product || data.data || data;
+    return normalizeProduct(product);
   },
 
   // Get all categories
   getCategories: async () => {
-    const response = await apiClient.get<{ success: boolean; data: CategoryResponse[] }>(
+    const response = await apiClient.get<any>(
       '/products/categories'
     );
-    return response.data.data;
+    const data = response.data;
+    const categories = data.categories || data.data || [];
+    return normalizeCategories(categories);
   },
 
   // Search products

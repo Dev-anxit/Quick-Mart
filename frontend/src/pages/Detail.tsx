@@ -33,11 +33,17 @@ export default function Detail() {
         setProduct(data);
 
         // Fetch related products
+        const categoryId = data.category_id || data.category || '';
         const related = await productService.getProducts({
-          category: data.category,
+          category: categoryId || undefined,
           limit: 6,
         });
-        setRelatedProducts(related.data?.filter((p: any) => p._id !== id) || []);
+        const products = related.data || [];
+        const productId = data._id || data.id || '';
+        setRelatedProducts(products.filter((p: any) => {
+          const pId = p._id || p.id || '';
+          return pId !== productId;
+        }) || []);
       } catch (error) {
         console.error('Failed to fetch product:', error);
         addToast({ type: 'error', message: 'Failed to load product' });
@@ -53,8 +59,14 @@ export default function Detail() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    const productId = product._id || product.id || '';
+    if (!productId) {
+      addToast({ type: 'error', message: 'Product ID not found' });
+      return;
+    }
+
     addItem({
-      product_id: product._id,
+      product_id: productId,
       name: product.name,
       price: product.price,
       quantity,

@@ -153,7 +153,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    productService.getCategories().then(setCategories).catch(() => {});
+    productService.getCategories()
+      .then(setCategories)
+      .catch(err => {
+        console.error('Failed to fetch categories:', err);
+        // Set empty array on error but don't show toast - this is non-critical
+      });
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -257,11 +262,21 @@ export default function Home() {
           <button onClick={() => setSelectedCategory(null)} className={`cat-pill ${selectedCategory === null ? 'active' : ''}`}>
             🛍️ All
           </button>
-          {categories.map(cat => (
-            <button key={cat._id} onClick={() => setSelectedCategory(cat._id)} className={`cat-pill ${selectedCategory === cat._id ? 'active' : ''}`}>
-              {cat.icon_url} {cat.name}
-            </button>
-          ))}
+          {categories.map(cat => {
+            const catId = cat._id || cat.id || '';
+            return (
+              <button key={catId} onClick={() => setSelectedCategory(catId)} className={`cat-pill ${selectedCategory === catId ? 'active' : ''}`}>
+                {cat.icon_url || cat.image_url ? (
+                  <>
+                    <img src={cat.icon_url || cat.image_url} alt={cat.name} style={{ width: '20px', height: '20px', display: 'inline' }} />
+                    {' '}{cat.name}
+                  </>
+                ) : (
+                  `🛒 ${cat.name}`
+                )}
+              </button>
+            );
+          })}
         </div>
       </nav>
 

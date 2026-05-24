@@ -147,16 +147,17 @@ export const authService = {
     try {
       // Format phone number - remove country code if present
       const cleanPhone = phone.replace(/[^\d]/g, '').slice(-10);
-      const response = await apiClient.post<{
-        success: boolean;
-        message: string;
-        data: UserResponse & { token: string };
-      }>('/auth/verify-otp', { phone: cleanPhone, otp });
+      const response = await apiClient.post<any>(
+        '/auth/verify-otp',
+        { phone: cleanPhone, otp }
+      );
 
-      if (response.data.success && response.data.data) {
-        const { token, ...userData } = response.data.data;
+      // Handle both response formats
+      const data = response.data.data || response.data;
+      const token = data.token || (response.data.data && response.data.data.token);
+      const userData = data.user || data;
 
-        // Convert string dates to Date objects
+      if (response.data.success && token && userData) {
         const user = {
           ...userData,
           createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),

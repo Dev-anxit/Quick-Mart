@@ -3,12 +3,17 @@
 // Pagination
 export interface PaginatedResponse<T> {
   success: boolean;
-  data: T[];
-  pagination: {
-    current_page: number;
-    total_pages: number;
-    total_items: number;
-    items_per_page: number;
+  products?: T[];
+  data?: T[];
+  pagination?: {
+    current_page?: number;
+    total_pages?: number;
+    total_items?: number;
+    items_per_page?: number;
+    page?: number;
+    limit?: number;
+    total?: number;
+    pages?: number;
   };
 }
 
@@ -41,30 +46,40 @@ export interface ProductFilters {
 
 // Product Responses
 export interface ProductResponse {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
-  description: string;
-  category: string;
-  brand: string;
+  description?: string;
+  category?: string;
+  category_id?: string;
+  brand?: string;
   price: number;
-  discount_percentage: number;
+  discount_percentage?: number;
   stock: number;
-  image_url: string;
-  rating: number;
-  reviews: any[];
-  nutritional_info: string;
-  veg_nonveg: 'veg' | 'non-veg';
-  weight: string;
+  image_url?: string;
+  image_urls?: string[];
+  rating?: number;
+  reviews?: any[];
+  nutritional_info?: string;
+  veg_nonveg?: 'veg' | 'non-veg';
+  weight?: string;
+  is_active?: boolean;
   createdAt?: string;
+  created_at?: string;
   updatedAt?: string;
+  updated_at?: string;
 }
 
 export interface CategoryResponse {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
-  icon_url: string;
+  icon_url?: string;
+  image_url?: string;
+  description?: string;
   parent_category?: string;
-  display_order: number;
+  display_order?: number;
+  is_active?: boolean;
 }
 
 // Order Responses

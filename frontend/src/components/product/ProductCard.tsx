@@ -9,21 +9,23 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onCartOpen }: ProductCardProps) {
   const { items, addItem, updateQuantity } = useCartStore();
-  const existing = items.find(i => i.product_id === product._id);
+  const productId = product._id || product.id || '';
+  const existing = items.find(i => i.product_id === productId);
   const qty = existing?.quantity ?? 0;
 
   const [imgError, setImgError] = useState(false);
 
   const discount = product.discount_percentage || 0;
   const finalPrice = Math.round(product.price * (1 - discount / 100));
+  const imageUrl = product.image_url || (product.image_urls?.length ? product.image_urls[0] : undefined);
 
   const handleAdd = () => {
     addItem({
-      product_id: product._id,
+      product_id: productId,
       name: product.name,
       price: finalPrice,
       quantity: 1,
-      image_url: product.image_url,
+      image_url: imageUrl,
     });
     onCartOpen?.();
   };
@@ -31,12 +33,12 @@ export function ProductCard({ product, onCartOpen }: ProductCardProps) {
   const handleInc = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (qty >= product.stock) return;
-    updateQuantity(product._id, qty + 1);
+    updateQuantity(productId, qty + 1);
   };
 
   const handleDec = (e: React.MouseEvent) => {
     e.stopPropagation();
-    updateQuantity(product._id, qty - 1);
+    updateQuantity(productId, qty - 1);
   };
 
   return (
