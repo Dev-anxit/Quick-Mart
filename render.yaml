@@ -13,7 +13,7 @@
           "value": "production"
         },
         {
-          "key": "MONGODB_URI",
+          "key": "DATABASE_URL",
           "sync": false
         },
         {
@@ -23,6 +23,14 @@
         {
           "key": "FRONTEND_URL",
           "value": "https://quickmart.vercel.app",
+          "sync": false
+        },
+        {
+          "key": "RAZORPAY_KEY_ID",
+          "sync": false
+        },
+        {
+          "key": "RAZORPAY_KEY_SECRET",
           "sync": false
         }
       ]
