@@ -232,17 +232,26 @@ export default function Track() {
           <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#111', margin: '0 0 1rem' }}>📦 Items Ordered</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {order.items?.map((item: any, index: number) => (
-                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem', borderRadius: 10, background: '#f9f9f7' }}>
-                  <span style={{ fontSize: '0.88rem', color: '#333', fontWeight: 600 }}>
-                    {item.product_name || item.name || `Item #${index + 1}`}
-                    <span style={{ color: '#888', fontWeight: 400 }}> × {item.quantity}</span>
-                  </span>
-                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#111' }}>
-                    ₹{((item.price_at_purchase || 0) * item.quantity).toFixed(0)}
-                  </span>
-                </div>
-              ))}
+              {order.items?.map((item: any, index: number) => {
+                const productName = item.product?.name || item.product_name || item.name || `Item #${index + 1}`;
+                const imageUrl = item.product?.image_urls?.[0] || item.product?.image_url;
+                return (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem', borderRadius: 10, background: '#f9f9f7' }}>
+                    {imageUrl && (
+                      <img src={imageUrl} alt={productName} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', background: '#f5f5f0' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: '0.88rem', color: '#333', fontWeight: 600 }}>
+                        {productName}
+                      </span>
+                      <span style={{ color: '#888', fontWeight: 600, fontSize: '0.78rem', marginLeft: '0.5rem' }}>× {item.quantity}</span>
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#111' }}>
+                      ₹{((item.price || item.price_at_purchase || 0) * item.quantity).toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

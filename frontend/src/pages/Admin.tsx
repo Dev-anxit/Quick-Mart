@@ -4,19 +4,24 @@ import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/uiStore';
 import apiClient from '../services/api';
 
-const S: Record<string, any> = {
+
+interface StatusColorMap {
+  [key: string]: { bg: string; color: string };
+}
+
+const S = {
   page: { minHeight: '100vh', background: '#f0f0ea', fontFamily: "'Inter', sans-serif" },
   header: { background: '#111', color: '#fff', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   body: { maxWidth: 1200, margin: '0 auto', padding: '2rem 1.5rem' },
   card: { background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8', marginBottom: '1.25rem' },
-  metricCard: (color: string) => ({ background: '#fff', borderRadius: 16, padding: '1.25rem 1.5rem', border: `2px solid ${color}20`, flex: 1 }),
-  tabBtn: (active: boolean) => ({ padding: '0.625rem 1.25rem', border: 'none', borderBottom: active ? '3px solid #0d9e6e' : '3px solid transparent', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: 'none', color: active ? '#0d9e6e' : '#666', transition: 'all 0.2s' }),
+  metricCard: (color: string) => ({ background: '#fff', borderRadius: 16, padding: '1.25rem 1.5rem', border: `2px solid ${color}20`, flex: 1 } as React.CSSProperties),
+  tabBtn: (active: boolean) => ({ padding: '0.625rem 1.25rem', border: 'none', borderBottom: active ? '3px solid #0d9e6e' : '3px solid transparent', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: 'none', color: active ? '#0d9e6e' : '#666', transition: 'all 0.2s' } as React.CSSProperties),
   th: { padding: '0.75rem 1rem', textAlign: 'left' as const, fontSize: '0.78rem', fontWeight: 700, color: '#888', textTransform: 'uppercase' as const, letterSpacing: '0.5px', borderBottom: '2px solid #f0f0ea' },
   td: { padding: '0.875rem 1rem', borderBottom: '1px solid #f5f5f0', fontSize: '0.88rem', color: '#333', verticalAlign: 'middle' as const },
 };
 
 const statusColor = (s: string) => {
-  const m: Record<string, any> = {
+  const m: StatusColorMap = {
     delivered:       { bg: '#d1fae5', color: '#065f46' },
     cancelled:       { bg: '#fee2e2', color: '#991b1b' },
     on_way:          { bg: '#cffafe', color: '#155e75' },
@@ -35,16 +40,10 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders'>('analytics');
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => { if (!user) navigate('/'); }, [user, navigate]);
-
-  useEffect(() => {
-    if (activeTab === 'analytics') fetchAnalytics();
-    else if (activeTab === 'products') fetchProducts();
-    else if (activeTab === 'orders') fetchOrders();
-  }, [activeTab]);
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
@@ -78,10 +77,16 @@ export default function Admin() {
     } catch { setOrders([]); } finally { setIsLoading(false); }
   };
 
+  useEffect(() => {
+    if (activeTab === 'analytics') fetchAnalytics();
+    else if (activeTab === 'products') fetchProducts();
+    else if (activeTab === 'orders') fetchOrders();
+  }, [activeTab]);
+
   const handleStatusUpdate = async (orderId: string, status: string) => {
     try {
       await apiClient.put(`/orders/${orderId}/status`, { status });
-      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status } : o));
+      setOrders(prev => prev.map(o => (o._id as string) === orderId ? { ...o, status } : o));
       addToast({ type: 'success', message: `Order updated to ${status}` });
     } catch {
       addToast({ type: 'error', message: 'Failed to update order status' });

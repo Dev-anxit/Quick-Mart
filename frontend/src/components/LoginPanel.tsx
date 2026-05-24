@@ -1,137 +1,145 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import './LoginPanel.css';
 
 export function LoginPanel() {
-  const { loginWithGoogle, loginWithPhone, verifyOTP, isLoading } = useAuth();
+  const { loginWithPhone, verifyOTP, isLoading } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [confirmationResult, setConfirmationResult] = useState<{ phoneNumber: string } | null>(null);
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleGoogleClick = async () => {
-    try {
-      setErrorMessage('');
-      await loginWithGoogle();
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrorMessage('Google login is not available');
+  useEffect(() => {
+    if (showOTPInput) {
+      otpRefs.current[0]?.focus();
     }
-  };
+  }, [showOTPInput]);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    
     if (phoneNumber.length < 10) {
       setErrorMessage('Please enter a valid 10-digit phone number');
       return;
     }
-    
     try {
       const result = await loginWithPhone(phoneNumber);
       setConfirmationResult(result);
       setShowOTPInput(true);
-    } catch (error: any) {
-      console.error('Phone login error:', error);
-      setErrorMessage(error.message || 'Failed to send OTP');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send OTP';
+      setErrorMessage(message);
+    }
+  };
+
+  const handleOtpChange = (idx: number, val: string) => {
+    if (!/^\d?$/.test(val)) return;
+    const next = [...otpDigits];
+    next[idx] = val;
+    setOtpDigits(next);
+    if (val && idx < 5) {
+      otpRefs.current[idx + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otpDigits[idx] && idx > 0) {
+      otpRefs.current[idx - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (text.length === 6) {
+      setOtpDigits(text.split(''));
+      otpRefs.current[5]?.focus();
     }
   };
 
   const handleOTPVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    
-    if (!confirmationResult || otp.length !== 6 || !/^\d+$/.test(otp)) {
-      setErrorMessage('Please enter a valid 6-digit OTP');
+    const otp = otpDigits.join('');
+    if (!confirmationResult || otp.length !== 6) {
+      setErrorMessage('Please enter all 6 digits');
       return;
     }
-
     try {
       await verifyOTP(otp, confirmationResult);
       setPhoneNumber('');
-      setOtp('');
+      setOtpDigits(['', '', '', '', '', '']);
       setConfirmationResult(null);
       setShowOTPInput(false);
-    } catch (error: any) {
-      console.error('OTP error:', error);
-      setErrorMessage(error.message || 'Invalid OTP');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid OTP';
+      setErrorMessage(message);
     }
   };
 
   const handleResendOTP = async () => {
     setErrorMessage('');
+    setOtpDigits(['', '', '', '', '', '']);
     try {
       const result = await loginWithPhone(phoneNumber);
       setConfirmationResult(result);
-    } catch (error: any) {
-      console.error('Resend OTP error:', error);
-      setErrorMessage(error.message || 'Failed to resend OTP');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resend OTP';
+      setErrorMessage(message);
     }
-  };
-
-  const handleBackToPhone = () => {
-    setOtp('');
-    setShowOTPInput(false);
-    setErrorMessage('');
   };
 
   return (
     <div className="auth-layout">
+      {/* Left banner */}
       <div className="auth-banner">
         <div className="banner-content">
-          <h1>Fresh Groceries,<br/>Delivered in Minutes.</h1>
-          <p>Join millions of users and experience lightning fast grocery delivery right to your doorstep.</p>
+          <div className="banner-logo">🛒</div>
+          <h1>Fresh Groceries,<br />Delivered in<br /><span>10 Minutes.</span></h1>
+          <p>Join millions of users and experience lightning-fast grocery delivery right to your doorstep.</p>
+          <div className="banner-features">
+            <div className="banner-feature">⚡ Instant 10-min delivery</div>
+            <div className="banner-feature">🌿 5000+ fresh products</div>
+            <div className="banner-feature">💳 Secure Razorpay payments</div>
+            <div className="banner-feature">🎁 Exclusive member deals</div>
+          </div>
         </div>
       </div>
+
+      {/* Right form */}
       <div className="auth-form-container">
         <div className="auth-form-wrapper">
           <div className="brand-header">
             <span className="brand-logo">🛒</span>
             <h2>QuickMart</h2>
           </div>
-          
-          <h3 className="form-title">
-            {showOTPInput ? 'Verify your number' : 'Welcome to QuickMart'}
-          </h3>
-          <p className="form-subtitle">
-            {showOTPInput 
-              ? `Enter the 6-digit OTP sent to +91${phoneNumber}` 
-              : 'Log in or sign up to continue'}
-          </p>
-
-          {errorMessage && (
-            <div style={{
-              padding: '12px',
-              marginBottom: '16px',
-              backgroundColor: '#fee',
-              border: '1px solid #fcc',
-              borderRadius: '4px',
-              color: '#c33',
-              fontSize: '14px'
-            }}>
-              {errorMessage}
-            </div>
-          )}
 
           {!showOTPInput ? (
-            <div className="form-content">
+            <>
+              <h3 className="form-title">Welcome Back!</h3>
+              <p className="form-subtitle">Login or create an account in seconds</p>
+
+              {errorMessage && (
+                <div className="error-banner">{errorMessage}</div>
+              )}
+
               <form onSubmit={handlePhoneSubmit}>
                 <div className="form-group">
                   <label htmlFor="phone">Phone Number</label>
                   <div className="phone-input-wrapper">
-                    <span className="country-code">+91</span>
+                    <span className="country-code">🇮🇳 +91</span>
                     <input
                       id="phone"
                       type="tel"
                       maxLength={10}
-                      placeholder="Enter 10 digit number"
+                      placeholder="Enter 10-digit number"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                       disabled={isLoading}
                       required
+                      autoFocus
                     />
                   </div>
                 </div>
@@ -140,78 +148,87 @@ export function LoginPanel() {
                   disabled={isLoading || phoneNumber.length < 10}
                   className="primary-btn"
                 >
-                  {isLoading ? 'Sending OTP...' : 'Continue'}
+                  {isLoading ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                      <span className="spinner" /> Sending OTP...
+                    </span>
+                  ) : 'Get OTP →'}
                 </button>
               </form>
 
-              <div id="recaptcha-container" className="recaptcha" />
+              <div className="divider"><span>or</span></div>
 
-              <div className="divider">
-                <span>or</span>
-              </div>
-
-              <button
-                onClick={handleGoogleClick}
-                disabled={isLoading}
-                className="google-btn"
-                type="button"
-              >
+              {/* Google Login — Coming Soon */}
+              <button className="google-btn google-btn-disabled" disabled type="button">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="google-icon" />
                 Continue with Google
+                <span className="coming-soon-badge">Coming Soon</span>
               </button>
-            </div>
+
+              <p className="auth-terms">
+                By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+              </p>
+            </>
           ) : (
-            <div className="form-content">
+            <>
+              <div className="otp-header">
+                <div className="otp-icon">📱</div>
+                <h3 className="form-title">Verify Your Number</h3>
+                <p className="form-subtitle">OTP sent to <strong>+91 {phoneNumber}</strong></p>
+              </div>
+
+              {errorMessage && (
+                <div className="error-banner">{errorMessage}</div>
+              )}
+
               <form onSubmit={handleOTPVerify}>
                 <div className="form-group">
-                  <label htmlFor="otp">One Time Password</label>
-                  <input
-                    id="otp"
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter 6-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    disabled={isLoading}
-                    className="otp-field"
-                    required
-                    autoFocus
-                  />
-                  <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                  <label>Enter 6-digit OTP</label>
+                  <div className="otp-boxes" onPaste={handleOtpPaste}>
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={el => { otpRefs.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={e => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={e => handleOtpKeyDown(idx, e)}
+                        className={`otp-box ${digit ? 'filled' : ''}`}
+                        disabled={isLoading}
+                      />
+                    ))}
+                  </div>
+                  <p className="resend-text">
                     Didn't receive OTP?{' '}
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={isLoading}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#10b981',
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                      }}
-                    >
+                    <button type="button" onClick={handleResendOTP} disabled={isLoading} className="resend-btn">
                       Resend OTP
                     </button>
                   </p>
                 </div>
+
                 <button
                   type="submit"
-                  disabled={isLoading || otp.length !== 6}
+                  disabled={isLoading || otpDigits.join('').length !== 6}
                   className="primary-btn"
                 >
-                  {isLoading ? 'Verifying...' : 'Verify & Proceed'}
+                  {isLoading ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                      <span className="spinner" /> Verifying...
+                    </span>
+                  ) : '✓ Verify & Login'}
                 </button>
                 <button
                   type="button"
-                  onClick={handleBackToPhone}
+                  onClick={() => { setShowOTPInput(false); setErrorMessage(''); setOtpDigits(['','','','','','']); }}
                   disabled={isLoading}
                   className="back-btn"
                 >
-                  Change Phone Number
+                  ← Change Phone Number
                 </button>
               </form>
-            </div>
+            </>
           )}
         </div>
       </div>

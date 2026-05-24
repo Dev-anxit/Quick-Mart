@@ -11,14 +11,18 @@ router.post("/create", authMiddleware, orderController.createOrder);
 // Get user's orders
 router.get("/", authMiddleware, orderController.getOrders);
 
-// Get specific order
-router.get("/:id", authMiddleware, orderController.getOrder);
+// Create Razorpay payment order (frontend calls /orders/razorpay/create-order)
+router.post("/razorpay/create-order", authMiddleware, orderController.createPayment);
 
-// Create payment
+// Verify Razorpay payment (frontend calls /orders/razorpay/webhook)
+router.post("/razorpay/webhook", authMiddleware, orderController.verifyPayment);
+
+// Also support legacy paths
 router.post("/payment/create", authMiddleware, orderController.createPayment);
-
-// Verify payment
 router.post("/payment/verify", authMiddleware, orderController.verifyPayment);
+
+// Get specific order (must be after specific routes)
+router.get("/:id", authMiddleware, orderController.getOrder);
 
 // Update order status (admin)
 router.put("/:id/status", authMiddleware, orderController.updateOrderStatus);

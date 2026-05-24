@@ -7,6 +7,7 @@ import Checkout from './pages/Checkout';
 import Track from './pages/Track';
 import Account from './pages/Account';
 import Admin from './pages/Admin';
+import OrderConfirmation from './pages/OrderConfirmation';
 
 import { useUIStore } from './store/uiStore';
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/product/:id" element={<Detail />} />
           <Route path="/search" element={<Search />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
           <Route path="/track/:orderId" element={<Track />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />

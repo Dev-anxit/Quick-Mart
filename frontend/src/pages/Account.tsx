@@ -21,10 +21,10 @@ interface Order {
   total_amount: number;
   status: string;
   created_at: string;
-  items: any[];
+  items: Record<string, unknown>[];
 }
 
-const S: Record<string, any> = {
+const S = {
   page: { minHeight: '100vh', background: '#f5f5f0', fontFamily: "'Inter', sans-serif" },
   header: { background: '#fff', borderBottom: '1px solid #e8e8e8', padding: '0 1.5rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as const, top: 0, zIndex: 50 },
   logo: { fontSize: '1.4rem', fontWeight: 900, color: '#111', textDecoration: 'none', letterSpacing: -1 },
@@ -32,7 +32,7 @@ const S: Record<string, any> = {
   card: { background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8' },
   sidebar: { background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e8e8e8', position: 'sticky' as const, top: 80, height: 'fit-content' },
   avatar: { width: 64, height: 64, background: 'linear-gradient(135deg, #0d9e6e, #065f46)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 0.75rem' },
-  tabBtn: (active: boolean) => ({ width: '100%', textAlign: 'left' as const, padding: '0.625rem 0.875rem', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', background: active ? '#f0fdf9' : 'none', color: active ? '#0d9e6e' : '#555', transition: 'all 0.2s', marginBottom: 4 }),
+  tabBtn: (active: boolean) => ({ width: '100%', textAlign: 'left' as const, padding: '0.625rem 0.875rem', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', background: active ? '#f0fdf9' : 'none', color: active ? '#0d9e6e' : '#555', transition: 'all 0.2s', marginBottom: 4 } as React.CSSProperties),
   input: { width: '100%', padding: '0.625rem 0.875rem', border: '1.5px solid #e0e0e0', borderRadius: 10, fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const },
   btnPrimary: { background: '#0d9e6e', color: '#fff', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' },
   btnSecondary: { background: '#f0f0f0', color: '#555', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' },
@@ -64,7 +64,6 @@ export default function Account() {
 
   useEffect(() => {
     if (activeTab === 'orders') {
-      setIsLoading(true);
       orderService.getUserOrders(1, 10)
         .then(r => setOrders(r.data || []))
         .catch(() => {})

@@ -25,6 +25,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     }
 
     req.user = payload;
+    (req as any).userId = payload.dbId || payload.uid;
     next();
   } catch (error) {
     return res.status(401).json({ error: "Authentication failed" });

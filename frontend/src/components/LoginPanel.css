@@ -1,14 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 .auth-layout {
   display: flex;
   min-height: 100vh;
   background-color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1f2937;
   width: 100vw;
   margin: 0;
   padding: 0;
 }
 
+/* ── Left Banner ─────────────────────────────────────────────────────────── */
 .auth-banner {
   display: none;
 }
@@ -17,7 +20,7 @@
   .auth-banner {
     display: flex;
     flex: 1.2;
-    background-color: #f3f4f6;
+    background-color: #0c1a12;
     background-image: url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop');
     background-size: cover;
     background-position: center;
@@ -29,33 +32,60 @@
   .auth-banner::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 100%);
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,50,20,0.5) 60%, rgba(0,0,0,0.2) 100%);
   }
 
   .banner-content {
     position: relative;
     z-index: 10;
     color: white;
-    max-width: 500px;
+    max-width: 520px;
     padding-bottom: 2rem;
   }
 
+  .banner-logo {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
   .banner-content h1 {
-    font-size: 3.5rem;
-    font-weight: 800;
+    font-size: 3.25rem;
+    font-weight: 900;
     line-height: 1.1;
     margin-bottom: 1rem;
-    letter-spacing: -1px;
+    letter-spacing: -1.5px;
+  }
+
+  .banner-content h1 span {
+    color: #4ade80;
   }
 
   .banner-content p {
-    font-size: 1.25rem;
-    opacity: 0.9;
-    line-height: 1.5;
+    font-size: 1.1rem;
+    opacity: 0.8;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .banner-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .banner-feature {
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.85;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 }
 
+/* ── Form Side ───────────────────────────────────────────────────────────── */
 .auth-form-container {
   flex: 1;
   display: flex;
@@ -63,6 +93,7 @@
   align-items: center;
   padding: 2.5rem;
   background-color: #ffffff;
+  overflow-y: auto;
 }
 
 .auth-form-wrapper {
@@ -74,85 +105,110 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .brand-logo {
-  font-size: 2.5rem;
+  font-size: 2.25rem;
 }
 
 .brand-header h2 {
   font-size: 1.75rem;
-  font-weight: 800;
-  color: #10b981;
+  font-weight: 900;
+  color: #0d9e6e;
   letter-spacing: -0.5px;
   margin: 0;
 }
 
 .form-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 0.4rem;
   color: #111827;
   line-height: 1.2;
 }
 
 .form-subtitle {
   color: #6b7280;
-  font-size: 1.05rem;
-  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
+  margin: 0 0 2rem;
+  line-height: 1.5;
 }
 
-.form-content {
-  display: flex;
-  flex-direction: column;
+/* OTP header */
+.otp-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
+.otp-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Error Banner ────────────────────────────────────────────────────────── */
+.error-banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ── Form Groups ─────────────────────────────────────────────────────────── */
 .form-group {
   margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
   color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* ── Phone Input ─────────────────────────────────────────────────────────── */
 .phone-input-wrapper {
   display: flex;
-  border: 1.5px solid #d1d5db;
-  border-radius: 0.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s;
-  background-color: #ffffff;
+  background: #fff;
 }
 
 .phone-input-wrapper:focus-within {
-  border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  border-color: #0d9e6e;
+  box-shadow: 0 0 0 4px rgba(13,158,110,0.12);
 }
 
 .country-code {
-  padding: 1rem 1rem;
-  background-color: #f9fafb;
-  border-right: 1.5px solid #d1d5db;
+  padding: 0.875rem 0.875rem;
+  background: #f9fafb;
+  border-right: 2px solid #e5e7eb;
   color: #4b5563;
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .phone-input-wrapper input {
   flex: 1;
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   border: none;
   outline: none;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: #111827;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: inherit;
 }
 
 .phone-input-wrapper input::placeholder {
@@ -160,74 +216,118 @@
   font-weight: 400;
 }
 
-.otp-field {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 1rem;
-  border: 1.5px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1.5rem;
-  letter-spacing: 0.5rem;
+/* ── OTP Boxes ───────────────────────────────────────────────────────────── */
+.otp-boxes {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.otp-box {
+  width: 52px;
+  height: 58px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
   text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111;
   outline: none;
   transition: all 0.2s;
-  font-weight: 600;
-  color: #111827;
+  background: #f9fafb;
+  font-family: inherit;
 }
 
-.otp-field:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+.otp-box:focus {
+  border-color: #0d9e6e;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(13,158,110,0.12);
 }
 
+.otp-box.filled {
+  border-color: #0d9e6e;
+  background: #f0fdf9;
+  color: #0d9e6e;
+}
+
+.resend-text {
+  font-size: 0.83rem;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: #0d9e6e;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.83rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.resend-btn:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
 .primary-btn {
   width: 100%;
-  background-color: #10b981;
+  background: linear-gradient(135deg, #0d9e6e, #059669);
   color: white;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 12px;
   padding: 1rem;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: all 0.2s;
+  font-family: inherit;
+  letter-spacing: 0.2px;
 }
 
 .primary-btn:hover:not(:disabled) {
-  background-color: #059669;
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(13,158,110,0.3);
 }
 
 .primary-btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .primary-btn:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
   cursor: not-allowed;
-  background-color: #9ca3af;
 }
 
 .back-btn {
   width: 100%;
   background: none;
   border: none;
-  color: #10b981;
+  color: #6b7280;
   font-size: 0.875rem;
   font-weight: 600;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s;
 }
 
 .back-btn:hover {
-  text-decoration: underline;
+  color: #0d9e6e;
 }
 
+/* ── Divider ─────────────────────────────────────────────────────────────── */
 .divider {
   display: flex;
   align-items: center;
-  margin: 2rem 0;
+  margin: 1.75rem 0;
   color: #9ca3af;
-  font-size: 0.875rem;
 }
 
 .divider::before,
@@ -239,40 +339,102 @@
 
 .divider span {
   padding: 0 1rem;
-  font-weight: 500;
-  text-transform: uppercase;
+  font-weight: 600;
   font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* ── Google Button ───────────────────────────────────────────────────────── */
 .google-btn {
   width: 100%;
-  background-color: white;
-  border: 1.5px solid #d1d5db;
+  background: #fff;
+  border: 2px solid #e5e7eb;
   color: #374151;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: all 0.2s;
+  font-family: inherit;
+  position: relative;
 }
 
 .google-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
+  background: #f9fafb;
   border-color: #9ca3af;
 }
 
-.google-icon {
-  width: 22px;
-  height: 22px;
+.google-btn-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.recaptcha {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.coming-soon-badge {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Terms ───────────────────────────────────────────────────────────────── */
+.auth-terms {
+  margin-top: 1.5rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.auth-terms a {
+  color: #0d9e6e;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-terms a:hover {
+  text-decoration: underline;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .auth-form-container {
+    padding: 1.5rem;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
 }

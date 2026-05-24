@@ -7,6 +7,7 @@ export interface JWTPayload {
   uid: string;
   email: string;
   role?: "user" | "admin";
+  dbId?: string; // The database user.id (CUID), embedded at login time
 }
 
 export function signToken(payload: JWTPayload): string {

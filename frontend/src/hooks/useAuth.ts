@@ -3,13 +3,15 @@ import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import authService from '../services/authService';
 
+import type { User } from '../types/domain';
+
 interface UseAuthReturn {
-  user: any | null;
+  user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   loginWithGoogle: () => Promise<void>;
-  loginWithPhone: (phoneNumber: string) => Promise<any>;
-  verifyOTP: (code: string, phoneNumber: string) => Promise<void>;
+  loginWithPhone: (phoneNumber: string) => Promise<{ phoneNumber: string }>;
+  verifyOTP: (code: string, confirmationResult: any) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -38,11 +40,12 @@ export function useAuth(): UseAuthReturn {
         message: 'Google login coming soon. Please use phone OTP for now.',
       });
       throw new Error('Google login is not configured. Please use phone authentication.');
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Google login is not available';
       console.error('Google login error:', error);
       addToast({
         type: 'error',
-        message: error.message || 'Google login is not available',
+        message,
       });
     } finally {
       setIsLoading(false);
@@ -52,7 +55,7 @@ export function useAuth(): UseAuthReturn {
   const loginWithPhone = async (phoneNumber: string) => {
     try {
       setIsLoading(true);
-      
+
       // Validate phone number
       const cleanPhone = phoneNumber.replace(/[^\d]/g, '').slice(-10);
       if (cleanPhone.length !== 10) {
@@ -61,19 +64,20 @@ export function useAuth(): UseAuthReturn {
 
       // Send OTP through backend
       await authService.sendOTP(phoneNumber);
-      
+
       addToast({
         type: 'success',
         message: 'OTP sent to your phone',
       });
-      
+
       // Return phone number to be used in OTP verification
       return { phoneNumber: cleanPhone };
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send OTP';
       console.error('Phone login error:', error);
       addToast({
         type: 'error',
-        message: error.message || 'Failed to send OTP',
+        message,
       });
       throw error;
     } finally {
@@ -81,10 +85,10 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  const verifyOTP = async (code: string, confirmationResult: any) => {
+  const verifyOTP = async (code: string, confirmationResult: { phoneNumber: string }) => {
     try {
       setIsLoading(true);
-      
+
       // Validate OTP
       if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
         throw new Error('Please enter a valid 6-digit OTP');
@@ -103,11 +107,12 @@ export function useAuth(): UseAuthReturn {
         type: 'success',
         message: 'Phone verified successfully!',
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to verify OTP';
       console.error('OTP verification error:', error);
       addToast({
         type: 'error',
-        message: error.message || 'Failed to verify OTP',
+        message,
       });
       throw error;
     } finally {
@@ -123,11 +128,12 @@ export function useAuth(): UseAuthReturn {
         type: 'success',
         message: 'Logged out successfully',
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to logout';
       console.error('Logout error:', error);
       addToast({
         type: 'error',
-        message: error.message || 'Failed to logout',
+        message,
       });
     } finally {
       setIsLoading(false);

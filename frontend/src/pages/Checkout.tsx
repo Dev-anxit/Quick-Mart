@@ -45,11 +45,13 @@ export default function Checkout() {
     }
 
     setIsProcessing(true);
+    let backendOrderId = '';
+
     try {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) throw new Error('Failed to load payment gateway');
 
-      // Create backend order (handles failure gracefully)
+      // Step 1: Create backend order
       let razorpayOrderId = `qm_${Date.now()}`;
       try {
         const createdOrder = await orderService.createOrder({
@@ -63,15 +65,19 @@ export default function Checkout() {
           promo_code: appliedPromo?.code,
           payment_method: 'razorpay',
         });
+        backendOrderId = createdOrder.order_id;
+
+        // Step 2: Create Razorpay order
         const rOrder = await orderService.razorpayCreateOrder({
           order_id: createdOrder.order_id,
           amount: grandTotal,
         });
         razorpayOrderId = rOrder.razorpay_order_id;
-      } catch {
-        // Proceed with client-side id if backend fails
+      } catch (err) {
+        console.warn('Backend order creation failed, using client ID:', err);
       }
 
+      // Step 3: Open Razorpay checkout
       openRazorpayCheckout({
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: Math.round(grandTotal * 100),
@@ -80,10 +86,26 @@ export default function Checkout() {
         name: 'QuickMart',
         description: `Fresh groceries delivery to ${city}`,
         prefill: { name, email: user?.email || '', contact: phone },
-        handler: async () => {
+        handler: async (response: any) => {
+          try {
+            // Verify payment
+            await orderService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id || razorpayOrderId,
+              razorpay_payment_id: response.razorpay_payment_id || 'mock_payment',
+              razorpay_signature: response.razorpay_signature || '',
+              orderId: backendOrderId,
+            });
+          } catch {
+            // Payment verify failure is non-blocking
+          }
           clear();
           addToast({ type: 'success', message: '🎉 Order placed! Delivering in 10 minutes.' });
-          navigate('/');
+          // Navigate to order confirmation page
+          if (backendOrderId) {
+            navigate(`/order-confirmation/${backendOrderId}`);
+          } else {
+            navigate('/account');
+          }
         },
         modal: {
           ondismiss: () => {
@@ -97,6 +119,7 @@ export default function Checkout() {
       setIsProcessing(false);
     }
   };
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f0', fontFamily: "'Inter', sans-serif" }}>

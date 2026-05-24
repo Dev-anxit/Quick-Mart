@@ -11,7 +11,7 @@ const io = new SocketIOServer(server, {
   cors: {
     origin: process.env.NODE_ENV === "production"
       ? process.env.FRONTEND_URL
-      : ["http://localhost:5173", "http://localhost:3000"],
+      : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:3000"],
     credentials: true,
   },
 });
@@ -68,22 +68,23 @@ async function startServer() {
   try {
     // Connect to Supabase/PostgreSQL via Prisma
     await connectDatabase();
+  } catch (error) {
+    console.error("⚠️  Database connection failed — server will start anyway:");
+    console.error("   Error:", error instanceof Error ? error.message : error);
+    console.error("   Fix: Check DATABASE_URL in backend/.env");
+  }
 
-    // Start server
-    server.listen(PORT, () => {
-      console.log(`
+  // Start server regardless of DB connection
+  server.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════╗
-║     🚀 E-Commerce Backend Started     ║
+║     🚀 QuickMart Backend Started      ║
 ║          Port: ${PORT}                  ║
 ║     Database: PostgreSQL (Supabase)   ║
-║     Environment: ${process.env.NODE_ENV}       ║
+║     Environment: ${process.env.NODE_ENV || 'development'}       ║
 ╚════════════════════════════════════════╝
-      `);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
+    `);
+  });
 }
 
 startServer();

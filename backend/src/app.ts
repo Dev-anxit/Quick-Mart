@@ -7,6 +7,7 @@ import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import cartRoutes from './routes/cart';
 import adminRoutes from './routes/admin';
+import promoRoutes from './routes/promos';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ const app: Express = express();
 app.use(cors({
   origin: process.env.NODE_ENV === "production"
     ? process.env.FRONTEND_URL
-    : ["http://localhost:5173", "http://localhost:3000"],
+    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:3000"],
   credentials: true,
 }));
 
@@ -34,6 +35,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/promos", promoRoutes);
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

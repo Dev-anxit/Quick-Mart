@@ -21,4 +21,9 @@ router.get("/profile", authMiddleware, authController.getProfile);
 // Update user profile
 router.put("/profile", authMiddleware, authController.updateProfile);
 
+// Logout (client-side only — just acknowledges logout)
+router.post("/logout", (req, res) => {
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
 export default router;

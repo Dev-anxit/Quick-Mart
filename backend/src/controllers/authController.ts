@@ -113,11 +113,12 @@ export async function verifyOTP(req: Request, res: Response) {
       return res.status(401).json({ error: "Invalid or expired OTP" });
     }
 
-    // Generate JWT token
+    // Generate JWT token — embed dbId so we don't need a DB lookup per request
     const token = signToken({
       uid: user.uid,
       email: user.email,
       role: "user",
+      dbId: user.id,
     });
 
     res.json({
