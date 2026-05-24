@@ -20,6 +20,15 @@ out/
 *.env.backup
 *.env.production
 
+# Secrets and credentials (DO NOT COMMIT!)
+.env.*.secret
+secrets.json
+*.private.json
+firebase-service-account.json
+service-account.json
+credentials.json
+private-key.pem
+
 # IDE
 .vscode/
 .idea/
@@ -42,3 +51,8 @@ firebase-admin-sdk.json
 
 # Backup files with credentials
 *.backup
+
+# Database dumps
+*.sql
+*.dump
+*.backup.sql

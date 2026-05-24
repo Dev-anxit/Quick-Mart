@@ -1,5 +1,7 @@
 # 🚀 Quick-Mart Deployment Guide
 
+⚠️ **SECURITY FIRST**: See [SECURITY.md](./SECURITY.md) for protecting sensitive data before deployment!
+
 ## 🎯 Deployment Overview
 
 Your Quick-Mart application is ready for production deployment. Follow these steps:
