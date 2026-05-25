@@ -39,6 +39,8 @@ jobs:
     name: Deploy to Vercel
     needs: build
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +56,7 @@ jobs:
         run: npm ci
 
       - name: Deploy to Vercel Production
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
+        if: env.VERCEL_TOKEN != ''
         working-directory: ./frontend
         run: |
           npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
@@ -66,7 +68,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
       - name: Skip notice (no secret)
-        if: ${{ secrets.VERCEL_TOKEN == '' }}
+        if: env.VERCEL_TOKEN == ''
         run: |
           echo "⚠️  VERCEL_TOKEN secret not set."
           echo "Add it at: https://github.com/Dev-anxit/Quick-Mart/settings/secrets/actions"

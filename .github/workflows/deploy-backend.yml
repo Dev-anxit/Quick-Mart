@@ -43,12 +43,14 @@ jobs:
     name: Trigger Render Deploy
     needs: build
     runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
     steps:
       - name: Trigger Render deploy hook
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
         run: |
           HTTP_STATUS=$(curl -s -o /tmp/render_response.json -w "%{http_code}" \
-            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+            -X POST "$RENDER_DEPLOY_HOOK_URL")
           cat /tmp/render_response.json
           if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 201 ]; then
             echo "✅ Render deployment triggered successfully!"
@@ -57,9 +59,9 @@ jobs:
             exit 1
           fi
 
-      - name: Skip notice (no secret)
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
+      - name: Skip notice (no secret set)
+        if: env.RENDER_DEPLOY_HOOK_URL == ''
         run: |
-          echo "⚠️  RENDER_DEPLOY_HOOK_URL secret not set."
+          echo "⚠️  RENDER_DEPLOY_HOOK_URL secret not set — skipping deploy trigger."
           echo "Add it at: https://github.com/Dev-anxit/Quick-Mart/settings/secrets/actions"
-          echo "Get the URL from: Render Dashboard → quickmart-backend → Settings → Deploy Hook"
+          echo "Get the URL: Render Dashboard → quick-mart → Settings → Deploy Hook"
