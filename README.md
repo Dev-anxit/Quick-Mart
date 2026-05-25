@@ -62,7 +62,7 @@ npm install && npm run dev
 ## 🏗️ Architecture & Structure
 
 ```bash
-Quick-Mart/
+E-commerce/
 ├── 📂 frontend/               # React Production Client
 │   ├── 📂 src/pages/          # Home, Listing, Detail, Checkout, Account, Admin
 │   ├── 📂 src/components/     # Shared UI components
@@ -167,3 +167,4 @@ Distributed under the **MIT License**. See `LICENSE` for details.
 
 **Built with ❤️ by [Ankit Yadav](https://github.com/Dev-anxit)**  
 *Giving back to the open-source community, one commit at a time.*
+
