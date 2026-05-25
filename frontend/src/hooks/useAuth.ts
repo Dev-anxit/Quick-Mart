@@ -63,11 +63,12 @@ export function useAuth(): UseAuthReturn {
       }
 
       // Send OTP through backend
-      await authService.sendOTP(phoneNumber);
+      const res = await authService.sendOTP(phoneNumber);
 
+      const otp = (res as any)?.otp;
       addToast({
         type: 'success',
-        message: 'OTP sent to your phone',
+        message: otp ? `OTP (Dev Mode): ${otp}` : 'OTP sent to your phone',
       });
 
       // Return phone number to be used in OTP verification
