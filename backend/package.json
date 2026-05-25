@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "Instant grocery delivery backend",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "postinstall": "prisma generate",
     "test": "vitest",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "test:ui": "vitest --ui",

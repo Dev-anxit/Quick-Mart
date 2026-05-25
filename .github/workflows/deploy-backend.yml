@@ -6,17 +6,60 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
+      - 'render.yaml'
 
 jobs:
-  deploy:
+  build:
+    name: Build & Verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Deploy to Render
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: ./backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+      - name: TypeScript build
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Verify dist/server.js exists
+        run: test -f backend/dist/server.js && echo "✅ Build artifact verified"
+
+  deploy:
+    name: Trigger Render Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
         run: |
-          curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}
-        if: success()
+          HTTP_STATUS=$(curl -s -o /tmp/render_response.json -w "%{http_code}" \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+          cat /tmp/render_response.json
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 201 ]; then
+            echo "✅ Render deployment triggered successfully!"
+          else
+            echo "⚠️  Render hook returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
 
-      - name: Notify Deployment
-        run: echo "✅ Backend deployment triggered! Check Render dashboard in 2-3 minutes."
+      - name: Skip notice (no secret)
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
+        run: |
+          echo "⚠️  RENDER_DEPLOY_HOOK_URL secret not set."
+          echo "Add it at: https://github.com/Dev-anxit/Quick-Mart/settings/secrets/actions"
+          echo "Get the URL from: Render Dashboard → quickmart-backend → Settings → Deploy Hook"
