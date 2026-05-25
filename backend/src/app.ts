@@ -13,11 +13,33 @@ dotenv.config();
 
 const app: Express = express();
 
+// Allowed origins
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? [
+      process.env.FRONTEND_URL,
+      "https://quick-mart-pied.vercel.app",
+      /^https:\/\/quick-mart.*\.vercel\.app$/,  // preview deployments
+    ].filter(Boolean)
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      "http://localhost:5177",
+      "http://localhost:3000",
+    ];
+
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === "production"
-    ? process.env.FRONTEND_URL
-    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:3000"],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Render health checks)
+    if (!origin) return callback(null, true);
+    const allowed = allowedOrigins.some((o) =>
+      typeof o === "string" ? o === origin : o instanceof RegExp ? o.test(origin) : false
+    );
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
 }));
 

@@ -1,39 +1,27 @@
-{
-  "services": [
-    {
-      "type": "web",
-      "name": "quickmart-backend",
-      "env": "node",
-      "plan": "free",
-      "buildCommand": "npm install && npx prisma generate && npm run build",
-      "startCommand": "npm start",
-      "envVars": [
-        {
-          "key": "NODE_ENV",
-          "value": "production"
-        },
-        {
-          "key": "DATABASE_URL",
-          "sync": false
-        },
-        {
-          "key": "JWT_SECRET",
-          "sync": false
-        },
-        {
-          "key": "FRONTEND_URL",
-          "value": "https://quickmart.vercel.app",
-          "sync": false
-        },
-        {
-          "key": "RAZORPAY_KEY_ID",
-          "sync": false
-        },
-        {
-          "key": "RAZORPAY_KEY_SECRET",
-          "sync": false
-        }
-      ]
-    }
-  ]
-}
+services:
+  - type: web
+    name: quickmart-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://quick-mart-pied.vercel.app
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
