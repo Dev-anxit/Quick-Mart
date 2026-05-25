@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import './LoginPanel.css';
 
 export function LoginPanel() {
-  const { loginWithPhone, verifyOTP, isLoading } = useAuth();
+  const { loginWithGoogle, loginWithPhone, verifyOTP, isLoading } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [confirmationResult, setConfirmationResult] = useState<{ phoneNumber: string } | null>(null);
@@ -158,11 +158,15 @@ export function LoginPanel() {
 
               <div className="divider"><span>or</span></div>
 
-              {/* Google Login — Coming Soon */}
-              <button className="google-btn google-btn-disabled" disabled type="button">
+              {/* Google Login */}
+              <button 
+                className="google-btn" 
+                onClick={loginWithGoogle} 
+                disabled={isLoading} 
+                type="button"
+              >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="google-icon" />
                 Continue with Google
-                <span className="coming-soon-badge">Coming Soon</span>
               </button>
 
               <p className="auth-terms">

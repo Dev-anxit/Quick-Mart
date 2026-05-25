@@ -35,13 +35,46 @@ export function useAuth(): UseAuthReturn {
   const loginWithGoogle = async () => {
     try {
       setIsLoading(true);
+
+      const isDemoFirebase = 
+        !import.meta.env.VITE_FIREBASE_API_KEY ||
+        import.meta.env.VITE_FIREBASE_API_KEY.includes('Demo') ||
+        import.meta.env.VITE_FIREBASE_API_KEY.includes('REPLACE');
+
+      let authResult;
+
+      if (isDemoFirebase) {
+        // Dev Mode Mock Google Login
+        console.warn('⚠️ Demo Firebase configuration detected. Simulating Google Login.');
+        
+        // Let's create a mock login result
+        const mockEmail = "test_google_user@gmail.com";
+        const mockName = "Google Test User";
+        authResult = {
+          user: {
+            uid: "google_test_user",
+            email: mockEmail,
+            name: mockName,
+            phone: "",
+            avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150",
+          },
+          token: "mock-google-token-test_google_user",
+        };
+      } else {
+        // Real Google Login
+        const { signInWithGoogle: firebaseSignInWithGoogle } = await import('../services/firebase');
+        authResult = await firebaseSignInWithGoogle();
+      }
+
+      // Verify the token with backend to establish JWT session
+      await authService.verifyFirebaseToken(authResult.token);
+
       addToast({
-        type: 'info',
-        message: 'Google login coming soon. Please use phone OTP for now.',
+        type: 'success',
+        message: 'Logged in successfully with Google!',
       });
-      throw new Error('Google login is not configured. Please use phone authentication.');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Google login is not available';
+      const message = error instanceof Error ? error.message : 'Google login failed';
       console.error('Google login error:', error);
       addToast({
         type: 'error',

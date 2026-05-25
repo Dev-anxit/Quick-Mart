@@ -2,23 +2,32 @@ import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { UserService } from '../services/userService';
 import { signToken } from '../config/jwt';
+import { verifyFirebaseIdToken } from '../config/firebaseAdmin';
 
 // Verify Firebase token and create/get user
 export async function verifyToken(req: Request, res: Response) {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "No token provided" });
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: "Token is required in body" });
+    }
+
+    const decodedUser = await verifyFirebaseIdToken(token);
+    if (!decodedUser) {
+      return res.status(401).json({ error: "Invalid or expired Firebase token" });
     }
 
     // Check if user exists, if not create
-    let user = await UserService.findByUid(req.user.uid);
+    let user = await UserService.findByUid(decodedUser.uid);
 
     if (!user) {
       user = await UserService.create({
-        uid: req.user.uid,
-        email: req.user.email || "",
-        phone: "",
-        name: "",
+        uid: decodedUser.uid,
+        email: decodedUser.email || `${decodedUser.uid}@quickmart.local`,
+        phone: decodedUser.phone || "",
+        name: decodedUser.name || `User ${decodedUser.uid}`,
+        avatar: decodedUser.picture || undefined,
         phone_verified: false,
       });
     }
@@ -27,13 +36,15 @@ export async function verifyToken(req: Request, res: Response) {
     const jwtToken = signToken({
       uid: user.uid,
       email: user.email,
-      role: req.user.role || "user",
+      role: "user",
+      dbId: user.id,
     });
 
     res.json({
       success: true,
       token: jwtToken,
       user: {
+        id: user.id,
         uid: user.uid,
         email: user.email,
         name: user.name,
