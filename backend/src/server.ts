@@ -9,7 +9,7 @@ const server = http.createServer(app);
 
 const PROD_ORIGINS = [
   process.env.FRONTEND_URL,
-  "https://quick-mart-pied.vercel.app",
+  "https://quick-mart-virid-phi.vercel.app",
   /^https:\/\/quick-mart.*\.vercel\.app$/,
 ].filter(Boolean);
 

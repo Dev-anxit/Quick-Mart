@@ -56,3 +56,4 @@ firebase-admin-sdk.json
 *.sql
 *.dump
 *.backup.sql
+.vercel

@@ -17,7 +17,7 @@ const app: Express = express();
 const allowedOrigins = process.env.NODE_ENV === "production"
   ? [
       process.env.FRONTEND_URL,
-      "https://quick-mart-pied.vercel.app",
+      "https://quick-mart-virid-phi.vercel.app",
       /^https:\/\/quick-mart.*\.vercel\.app$/,  // preview deployments
     ].filter(Boolean)
   : [
