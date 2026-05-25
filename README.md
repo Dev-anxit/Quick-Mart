@@ -1,41 +1,49 @@
 # 🛒 QuickMart: Next-Gen Instant Grocery Platform
 ### *Modern. Fast. Reliable. Full-Stack.*
 
-[![Status](https://img.shields.io/badge/Status-Production--Ready-00E676?style=for-the-badge&logo=statuspage)](https://github.com)
+[![Status](https://img.shields.io/badge/Status-Production--Ready-00E676?style=for-the-badge&logo=statuspage)](https://github.com/Dev-anxit/Quick-Mart)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Stack](https://img.shields.io/badge/Stack-MERN%20+%20Redis-61DAFB?style=for-the-badge&logo=react)](https://github.com)
+[![Stack](https://img.shields.io/badge/Stack-React%20+%20Node.js%20+%20PostgreSQL-61DAFB?style=for-the-badge&logo=react)](https://github.com/Dev-anxit/Quick-Mart)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
 
-QuickMart is a high-fidelity, production-grade quick-commerce platform inspired by industry leaders like Zepto and Blinkit. Delivering sub-10-minute grocery convenience through a robust MERN stack architecture, optimized with Redis caching and real-time Socket.io communication.
+QuickMart is a high-fidelity, production-grade quick-commerce platform inspired by industry leaders like Zepto and Blinkit. Delivering sub-10-minute grocery convenience through a robust full-stack architecture with real-time Socket.io communication.
+
+🌐 **Live Site:** [quick-mart-virid-phi.vercel.app](https://quick-mart-virid-phi.vercel.app)  
+⚙️ **API:** [quickmart-backend.onrender.com](https://quickmart-backend.onrender.com)
 
 ---
 
 ## 🎯 Quick Start
 
 ```bash
-# Setup Environment
-git clone https://github.com/ankityadav/E-commerce.git && cd E-commerce
+# Clone the repo
+git clone https://github.com/Dev-anxit/Quick-Mart.git && cd Quick-Mart
 
-# Install & Launch (Parallel)
-sh -c "cd frontend && npm install && npm run dev" & 
-sh -c "cd backend && npm install && npm run dev"
+# Setup backend
+cd backend && cp .env.example .env   # fill in your credentials
+npm install && npm run dev
+
+# Setup frontend (in a new terminal)
+cd frontend && cp .env.example .env
+npm install && npm run dev
 ```
 
 ---
 
-## ✨ Premium Features
+## ✨ Features
 
 ### 👤 User Experience
-- **Lightning Search**: Full-text search with category filters and instant suggestions.
-- **Micro-Interactions**: Smooth animations powered by Framer Motion.
-- **Smart Cart**: Persistent shopping experience with Redis-backed speed.
-- **Real-Time Tracking**: Live order status and rider movement via Socket.io.
-- **Secure Checkout**: Multi-step flow with Razorpay payment integration.
+- **Authentication**: JWT-based auth with OTP verification support
+- **Product Catalog**: Full-text search with category filters and instant suggestions
+- **Smart Cart**: Persistent shopping cart backed by PostgreSQL
+- **Real-Time Tracking**: Live order status and rider movement via Socket.io
+- **Secure Checkout**: Multi-step flow with Razorpay payment integration
+- **Order History**: Full order timeline with status tracking
 
 ### 🏪 Admin & Logistics
-- **Dynamic Dashboard**: Real-time sales analytics and inventory metrics.
-- **Inventory Control**: Comprehensive product, category, and promo management.
-- **Smart Dispatch**: Intelligent rider assignment and automated order workflows.
+- **Dynamic Dashboard**: Real-time sales analytics and inventory metrics
+- **Inventory Control**: Comprehensive product, category, and promo management
+- **Smart Dispatch**: Intelligent rider assignment and automated order workflows
 
 ---
 
@@ -43,77 +51,111 @@ sh -c "cd backend && npm install && npm run dev"
 
 | Frontend | Backend | Infrastructure |
 |---|---|---|
-| **React 18** (Vite) | **Node.js** (Express) | **MongoDB Atlas** |
-| **TypeScript** | **TypeScript** | **Redis Cloud** |
-| **Tailwind CSS** | **Mongoose** (ODM) | **Firebase Auth** |
-| **Zustand** | **Socket.io** | **Cloudinary** |
-| **Framer Motion** | **Razorpay SDK** | **Vercel / Railway** |
+| **React 18** (Vite) | **Node.js** (Express 5) | **Supabase** (PostgreSQL) |
+| **TypeScript** | **TypeScript** | **Prisma** ORM |
+| **Vanilla CSS** | **Socket.io** | **Firebase** (Auth/Notifications) |
+| **React Router v6** | **Razorpay SDK** | **Vercel** (Frontend) |
+| **Axios** | **JWT** | **Render** (Backend) |
 
 ---
 
 ## 🏗️ Architecture & Structure
 
 ```bash
-E-commerce/
+Quick-Mart/
 ├── 📂 frontend/               # React Production Client
-│   ├── 📂 src/components/     # Atomic UI (Layout, Product, Cart, Admin)
-│   ├── 📂 src/store/          # Zustand State (Auth, Cart, Orders)
-│   ├── 📂 src/services/       # API Clients & Socket Logic
+│   ├── 📂 src/pages/          # Home, Listing, Detail, Checkout, Account, Admin
+│   ├── 📂 src/components/     # Shared UI components
+│   ├── 📂 src/hooks/          # Custom React hooks (useAuth, useCart...)
+│   ├── 📂 src/services/       # API clients & Socket logic
+│   ├── 📄 vercel.json         # SPA routing config
 │   └── 📄 package.json
 ├── 📂 backend/                # Express REST API
-│   ├── 📂 src/models/         # MongoDB Schemas (User, Product, Order)
-│   ├── 📂 src/controllers/    # Route Logic & Business Operations
-│   └── 📄 server.ts           # Entry point
-└── 📄 README.md               # You are here
+│   ├── 📂 src/controllers/    # Route handlers & business logic
+│   ├── 📂 src/routes/         # API route definitions
+│   ├── 📂 src/services/       # Service layer (User, Product, Order)
+│   ├── 📂 src/config/         # Prisma, JWT config
+│   ├── 📂 src/middleware/     # Auth middleware
+│   ├── 📂 prisma/             # Database schema & migrations
+│   ├── 📄 render.yaml         # Render deployment config
+│   └── 📄 package.json
+└── 📄 README.md
 ```
 
 ---
 
-## 📡 API Reference Summary
+## 📡 API Reference
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/auth/login` | `POST` | User authentication & JWT issuance |
+| `/api/auth/register` | `POST` | User registration |
+| `/api/auth/login` | `POST` | Login & JWT issuance |
 | `/api/products` | `GET` | Paginated product retrieval |
-| `/api/cart/add` | `POST` | Add/Update items in Redis-backed cart |
-| `/api/orders` | `POST` | Create order and initiate payment |
-| `/api/admin/dashboard` | `GET` | Real-time administrative metrics |
+| `/api/cart` | `GET/POST/DELETE` | Cart management |
+| `/api/orders` | `POST` | Create order & payment |
+| `/api/orders/:id` | `GET` | Order details & tracking |
+| `/api/admin/dashboard` | `GET` | Admin analytics (protected) |
+| `/health` | `GET` | Service health check |
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Environment Variables
 
-### Prerequisites
-- **Node.js 18+**, **MongoDB**, **Redis**, and **Firebase Account**.
+### Backend (`backend/.env`)
+```env
+NODE_ENV=development
+PORT=3500
+DATABASE_URL=postgresql://user:password@host:5432/db?sslmode=require
+JWT_SECRET=your-secret-key-min-32-chars
+FRONTEND_URL=http://localhost:5173
+RAZORPAY_KEY_ID=rzp_test_xxxxx
+RAZORPAY_KEY_SECRET=xxxxx
+FIREBASE_PROJECT_ID=your-project-id
+```
 
-### Setup Environment
-1. **Frontend**: Copy `frontend/.env.example` to `.env.local`
-2. **Backend**: Copy `backend/.env.example` to `.env`
-3. Fill in your credentials (Razorpay, Firebase, Cloudinary).
-
-### Seed Database
-```bash
-cd backend && npm run seed
+### Frontend (`frontend/.env`)
+```env
+VITE_API_BASE_URL=http://localhost:3500/api
+VITE_SOCKET_URL=http://localhost:3500
+VITE_RAZORPAY_KEY_ID=rzp_test_xxxxx
 ```
 
 ---
 
-## 📈 Roadmap & Future
+## 🗄️ Database Setup
 
-- [x] **Phase 1**: Core MERN Infrastructure & Auth.
-- [x] **Phase 2**: Real-time Tracking & Redis Integration.
-- [ ] **Phase 3**: AI-powered personalized product recommendations.
-- [ ] **Phase 4**: Native Mobile Extensions (React Native).
-- [ ] **Phase 5**: Multi-vendor marketplace support.
+```bash
+# Generate Prisma client
+cd backend && npx prisma generate
+
+# Push schema to database
+npx prisma db push
+
+# Seed with sample data
+npm run seed
+```
+
+---
+
+## 📈 Roadmap
+
+- [x] **Phase 1**: Core Auth, Product Catalog & Cart
+- [x] **Phase 2**: Real-time Order Tracking via Socket.io
+- [x] **Phase 3**: Razorpay Payment Integration
+- [x] **Phase 4**: Admin Dashboard & Analytics
+- [x] **Phase 5**: Production Deployment (Vercel + Render)
+- [ ] **Phase 6**: AI-powered product recommendations
+- [ ] **Phase 7**: Native Mobile App (React Native)
+- [ ] **Phase 8**: Multi-vendor marketplace support
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please fork the repo, create a feature branch, and submit a PR. 
+We welcome contributions! Please fork the repo, create a feature branch, and submit a PR.
 
-- **Issues**: [Report bugs here](https://github.com/ankityadav/issues)
-- **Discord**: [Join the community](https://discord.gg)
+- **Issues**: [Report bugs here](https://github.com/Dev-anxit/Quick-Mart/issues)
+- **Repo**: [github.com/Dev-anxit/Quick-Mart](https://github.com/Dev-anxit/Quick-Mart)
 
 ---
 
@@ -123,6 +165,5 @@ Distributed under the **MIT License**. See `LICENSE` for details.
 
 ---
 
-**Built with ❤️ by [Ankit Yadav](https://github.com/ankityadav)**  
+**Built with ❤️ by [Ankit Yadav](https://github.com/Dev-anxit)**  
 *Giving back to the open-source community, one commit at a time.*
-

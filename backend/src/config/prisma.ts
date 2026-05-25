@@ -17,7 +17,6 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export async function connectDatabase() {
   try {
-    // Use a lightweight query to test connection instead of $connect()
     await prisma.$queryRaw`SELECT 1`;
     console.log('✅ Prisma/PostgreSQL connected successfully');
   } catch (error) {
@@ -34,3 +33,8 @@ export async function disconnectDatabase() {
     console.error('❌ Error disconnecting database:', error);
   }
 }
+
+// Graceful shutdown — use process event instead of Prisma beforeExit (removed in Prisma 5)
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
