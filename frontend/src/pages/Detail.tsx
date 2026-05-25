@@ -19,11 +19,6 @@ export default function Detail() {
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      navigate('/');
-      return;
-    }
-
     const fetchProduct = async () => {
       if (!id) return;
 
@@ -54,10 +49,16 @@ export default function Detail() {
     };
 
     fetchProduct();
-  }, [id, isLoggedIn, navigate, addToast]);
+  }, [id, navigate, addToast]);
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    if (!isLoggedIn) {
+      addToast({ type: 'info', message: 'Please login to add items to your cart' });
+      useUIStore.getState().setAuthModalOpen(true);
+      return;
+    }
 
     const productId = product._id || product.id || '';
     if (!productId) {

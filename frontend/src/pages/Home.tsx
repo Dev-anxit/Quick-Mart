@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCartStore } from '../store/cartStore';
 import { useUIStore } from '../store/uiStore';
-import { LoginPanel } from '../components/LoginPanel';
 import { ProductCard } from '../components/product/ProductCard';
 import productService from '../services/productService';
 import type { ProductResponse, CategoryResponse } from '../types/api';
@@ -140,6 +139,7 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
 // ── Home Page ────────────────────────────────────────────────────────────────
 export default function Home() {
   const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,25 +152,20 @@ export default function Home() {
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
     productService.getCategories()
       .then(setCategories)
       .catch(err => {
         console.error('Failed to fetch categories:', err);
-        // Set empty array on error but don't show toast - this is non-critical
       });
-  }, [isLoggedIn]);
+  }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
     setIsLoading(true);
     productService.getProducts({ category: selectedCategory || undefined, page: 1, limit: 40 })
       .then(r => setProducts(r.data || []))
       .catch(() => setProducts([]))
       .finally(() => setIsLoading(false));
-  }, [isLoggedIn, selectedCategory]);
-
-  if (!isLoggedIn) return <LoginPanel />;
+  }, [selectedCategory]);
 
   const filtered = search.trim()
     ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -194,8 +189,21 @@ export default function Home() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className="qm-header-actions">
-            <a href="/account" className="qm-account-btn">👤 Account</a>
+          <div className="qm-qm-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button 
+              onClick={() => {
+                if (!isLoggedIn) {
+                  useUIStore.getState().addToast({ type: 'info', message: 'Please login to access your account' });
+                  useUIStore.getState().setAuthModalOpen(true);
+                } else {
+                  navigate('/account');
+                }
+              }} 
+              className="qm-account-btn"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', display: 'flex', alignItems: 'center', color: '#374151', fontWeight: 600 }}
+            >
+              👤 Account
+            </button>
             <button className="qm-cart-btn" onClick={() => setCartOpen(true)}>
               🛒
               {totalItems > 0 && <span className="qm-cart-badge">{totalItems}</span>}

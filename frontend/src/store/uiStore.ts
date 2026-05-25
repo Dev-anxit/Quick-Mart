@@ -6,6 +6,7 @@ interface UIState {
   isCartDrawerOpen: boolean;
   isMobileMenuOpen: boolean;
   isFiltersDrawerOpen: boolean;
+  isAuthModalOpen: boolean;
 
   // Notifications
   toasts: Toast[];
@@ -21,6 +22,7 @@ interface UIState {
   setMobileMenuOpen: (open: boolean) => void;
   toggleFiltersDrawer: () => void;
   setFiltersDrawerOpen: (open: boolean) => void;
+  setAuthModalOpen: (open: boolean) => void;
 
   // Toast Actions
   addToast: (toast: Omit<Toast, 'id'>) => void;
@@ -39,6 +41,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   isCartDrawerOpen: false,
   isMobileMenuOpen: false,
   isFiltersDrawerOpen: false,
+  isAuthModalOpen: false,
   toasts: [],
   isLoading: false,
   loadingMessage: '',
@@ -66,6 +69,10 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setFiltersDrawerOpen: (open: boolean) => {
     set({ isFiltersDrawerOpen: open });
+  },
+
+  setAuthModalOpen: (open: boolean) => {
+    set({ isAuthModalOpen: open });
   },
 
   // Toast Actions

@@ -40,7 +40,7 @@ const S = {
 };
 
 export default function Account() {
-  const { user, logout } = useAuth();
+  const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useUIStore();
 
@@ -55,21 +55,38 @@ export default function Account() {
   });
 
   useEffect(() => {
-    if (activeTab === 'addresses') {
+    if (!isLoggedIn) {
+      navigate('/');
+      useUIStore.getState().addToast({ type: 'info', message: 'Please login to access your account' });
+      useUIStore.getState().setAuthModalOpen(true);
+    }
+  }, [isLoggedIn, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        name: user.name || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'addresses' && isLoggedIn) {
       userService.getSavedAddresses()
         .then(data => setAddresses(Array.isArray(data) ? data : []))
         .catch(() => {});
     }
-  }, [activeTab]);
+  }, [activeTab, isLoggedIn]);
 
   useEffect(() => {
-    if (activeTab === 'orders') {
+    if (activeTab === 'orders' && isLoggedIn) {
       orderService.getUserOrders(1, 10)
         .then(r => setOrders(r.data || []))
         .catch(() => {})
         .finally(() => setIsLoading(false));
     }
-  }, [activeTab]);
+  }, [activeTab, isLoggedIn]);
 
   const handleUpdateProfile = async () => {
     try {

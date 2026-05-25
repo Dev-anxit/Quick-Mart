@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import productService from '../services/productService';
 import { ProductCard } from '../components/product/ProductCard';
 import type { ProductResponse, CategoryResponse } from '../types/api';
 
 export default function Listing() {
-  const { isLoggedIn } = useAuth();
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,10 +26,8 @@ export default function Listing() {
       }
     };
 
-    if (isLoggedIn) {
-      fetchCategories();
-    }
-  }, [isLoggedIn]);
+    fetchCategories();
+  }, []);
 
   // Fetch products with current filters
   useEffect(() => {
@@ -55,10 +51,8 @@ export default function Listing() {
       }
     };
 
-    if (isLoggedIn) {
-      fetchProducts();
-    }
-  }, [isLoggedIn, selectedCategory, priceMin, priceMax, sortBy, page]);
+    fetchProducts();
+  }, [selectedCategory, priceMin, priceMax, sortBy, page]);
 
   return (
     <div className="min-h-screen bg-gray-50">

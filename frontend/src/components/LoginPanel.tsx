@@ -1,13 +1,21 @@
 import type React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useUIStore } from '../store/uiStore';
 import './LoginPanel.css';
 
 export function LoginPanel() {
-  const { loginWithGoogle, loginWithPhone, verifyOTP, isLoading } = useAuth();
+  const { loginWithGoogle, loginWithPhone, verifyOTP, isLoading, isLoggedIn } = useAuth();
+  const { isAuthModalOpen, setAuthModalOpen } = useUIStore();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [confirmationResult, setConfirmationResult] = useState<{ phoneNumber: string } | null>(null);
+
+  useEffect(() => {
+    if (isLoggedIn && isAuthModalOpen) {
+      setAuthModalOpen(false);
+    }
+  }, [isLoggedIn, isAuthModalOpen, setAuthModalOpen]);
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -92,7 +100,7 @@ export function LoginPanel() {
   };
 
   return (
-    <div className="auth-layout">
+    <div className={`auth-layout ${isAuthModalOpen ? 'auth-modal-layout' : ''}`}>
       {/* Left banner */}
       <div className="auth-banner">
         <div className="banner-content">
@@ -109,7 +117,16 @@ export function LoginPanel() {
       </div>
 
       {/* Right form */}
-      <div className="auth-form-container">
+      <div className="auth-form-container" style={{ position: 'relative' }}>
+        {isAuthModalOpen && (
+          <button 
+            type="button" 
+            onClick={() => setAuthModalOpen(false)} 
+            className="auth-modal-close-btn"
+          >
+            ✕
+          </button>
+        )}
         <div className="auth-form-wrapper">
           <div className="brand-header">
             <span className="brand-logo">🛒</span>

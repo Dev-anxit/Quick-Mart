@@ -1,14 +1,12 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import productService from '../services/productService';
 import { ProductCard } from '../components/product/ProductCard';
 import type { ProductResponse } from '../types/api';
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isLoggedIn } = useAuth();
 
   const query = searchParams.get('q') || '';
   const [searchInput, setSearchInput] = useState(query);
@@ -18,7 +16,7 @@ export default function Search() {
 
   // Search on query param change
   useEffect(() => {
-    if (!query || !isLoggedIn) return;
+    if (!query) return;
 
     const performSearch = async () => {
       try {
@@ -35,7 +33,7 @@ export default function Search() {
     };
 
     performSearch();
-  }, [query, isLoggedIn]);
+  }, [query]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

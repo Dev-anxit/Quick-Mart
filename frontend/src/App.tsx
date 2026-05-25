@@ -8,12 +8,14 @@ import Track from './pages/Track';
 import Account from './pages/Account';
 import Admin from './pages/Admin';
 import OrderConfirmation from './pages/OrderConfirmation';
+import { LoginPanel } from './components/LoginPanel';
 
 import { useUIStore } from './store/uiStore';
 
 function App() {
   const toasts = useUIStore(state => state.toasts);
   const removeToast = useUIStore(state => state.removeToast);
+  const isAuthModalOpen = useUIStore(state => state.isAuthModalOpen);
 
   return (
     <>
@@ -31,6 +33,26 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+
+      {/* Global Login Modal Overlay */}
+      {isAuthModalOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          animation: 'fadeInModal 0.2s ease-out'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            maxWidth: '450px', width: '100%', position: 'relative',
+            overflow: 'hidden', margin: '20px'
+          }}>
+            <LoginPanel />
+          </div>
+        </div>
+      )}
+
       <div style={{
         position: 'fixed', top: '80px', right: '20px', zIndex: 9999,
         display: 'flex', flexDirection: 'column', gap: '10px',
@@ -75,6 +97,10 @@ function App() {
         @keyframes slideInToast {
           from { transform: translateX(110%); opacity: 0; }
           to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes fadeInModal {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
     </>

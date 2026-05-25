@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useCartStore } from '../../store/cartStore';
+import { useAuth } from '../../hooks/useAuth';
+import { useUIStore } from '../../store/uiStore';
 import type { ProductResponse } from '../../types/api';
 
 interface ProductCardProps {
@@ -9,6 +11,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onCartOpen }: ProductCardProps) {
   const { items, addItem, updateQuantity } = useCartStore();
+  const { isLoggedIn } = useAuth();
+  const { setAuthModalOpen, addToast } = useUIStore();
   const productId = product._id || product.id || '';
   const existing = items.find(i => i.product_id === productId);
   const qty = existing?.quantity ?? 0;
@@ -20,6 +24,11 @@ export function ProductCard({ product, onCartOpen }: ProductCardProps) {
   const imageUrl = product.image_url || (product.image_urls?.length ? product.image_urls[0] : undefined);
 
   const handleAdd = () => {
+    if (!isLoggedIn) {
+      addToast({ type: 'info', message: 'Please login to add items to your cart' });
+      setAuthModalOpen(true);
+      return;
+    }
     addItem({
       product_id: productId,
       name: product.name,
@@ -32,12 +41,22 @@ export function ProductCard({ product, onCartOpen }: ProductCardProps) {
 
   const handleInc = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isLoggedIn) {
+      addToast({ type: 'info', message: 'Please login to add items to your cart' });
+      setAuthModalOpen(true);
+      return;
+    }
     if (qty >= product.stock) return;
     updateQuantity(productId, qty + 1);
   };
 
   const handleDec = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isLoggedIn) {
+      addToast({ type: 'info', message: 'Please login to add items to your cart' });
+      setAuthModalOpen(true);
+      return;
+    }
     updateQuantity(productId, qty - 1);
   };
 
