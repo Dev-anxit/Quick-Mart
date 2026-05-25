@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: quickmart-backend
+    name: quick-mart
     env: node
     plan: free
     rootDir: backend

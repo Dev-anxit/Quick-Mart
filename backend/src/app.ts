@@ -18,6 +18,7 @@ const allowedOrigins = process.env.NODE_ENV === "production"
   ? [
       process.env.FRONTEND_URL,
       "https://quick-mart-virid-phi.vercel.app",
+      "https://quick-mart-q63b.onrender.com",
       /^https:\/\/quick-mart.*\.vercel\.app$/,  // preview deployments
     ].filter(Boolean)
   : [

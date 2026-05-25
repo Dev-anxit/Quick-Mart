@@ -9,7 +9,7 @@
 QuickMart is a high-fidelity, production-grade quick-commerce platform inspired by industry leaders like Zepto and Blinkit. Delivering sub-10-minute grocery convenience through a robust full-stack architecture with real-time Socket.io communication.
 
 🌐 **Live Site:** [quick-mart-virid-phi.vercel.app](https://quick-mart-virid-phi.vercel.app)  
-⚙️ **API:** [quickmart-backend.onrender.com](https://quickmart-backend.onrender.com)
+⚙️ **API:** [quick-mart-q63b.onrender.com](https://quick-mart-q63b.onrender.com)
 
 ---
 
