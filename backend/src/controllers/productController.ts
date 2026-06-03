@@ -21,6 +21,7 @@ export async function getProducts(req: Request, res: Response) {
     res.json({
       success: true,
       products,
+      data: products,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -30,6 +31,26 @@ export async function getProducts(req: Request, res: Response) {
     });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get products" });
+  }
+}
+
+export async function searchProducts(req: Request, res: Response) {
+  try {
+    const rawQuery = req.params.query;
+    const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery) || "";
+    const { limit = 20 } = req.query;
+    const limitNum = Array.isArray(limit) ? Number(limit[0]) : Number(limit);
+
+    const products = await ProductService.searchProducts(query, limitNum);
+
+    res.json({
+      success: true,
+      data: products,
+      products,
+      count: products.length,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to search products" });
   }
 }
 

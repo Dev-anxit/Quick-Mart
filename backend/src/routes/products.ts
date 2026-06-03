@@ -1,5 +1,4 @@
 import express from "express";
-import type { Request, Response } from "express";
 import * as productController from '../controllers/productController';
 import { authMiddleware } from '../middleware/auth';
 
@@ -10,6 +9,9 @@ router.get("/", productController.getProducts);
 
 // Get categories (must come before /:id to avoid matching "categories" as an ID)
 router.get("/categories", productController.getCategories);
+
+// Search products (must come before /:id to avoid matching "search" as an ID)
+router.get("/search/:query", productController.searchProducts);
 
 // Get product by ID
 router.get("/:id", productController.getProduct);

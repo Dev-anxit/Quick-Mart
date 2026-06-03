@@ -1,5 +1,4 @@
 import express from "express";
-import type { Request, Response } from "express";
 import { authMiddleware } from '../middleware/auth';
 import * as orderController from '../controllers/orderController';
 

@@ -63,9 +63,14 @@ export async function getOrders(req: Request, res: Response) {
     const { page = 1 } = req.query;
     const { orders, total } = await OrderService.getUserOrders(userId, Number(page));
 
+    const normalizedOrders = orders.map((o) => ({
+      ...o,
+      _id: o.id,
+    }));
+
     res.json({
       success: true,
-      data: orders,
+      data: normalizedOrders,
       pagination: {
         page: Number(page),
         total,
@@ -97,9 +102,14 @@ export async function getOrder(req: Request, res: Response) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    const normalizedOrder = {
+      ...order,
+      _id: order.id,
+    };
+
     res.json({
       success: true,
-      data: order,
+      data: normalizedOrder,
     });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get order" });

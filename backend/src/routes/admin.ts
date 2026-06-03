@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth';
 const router = express.Router();
 
 // Get dashboard stats
-router.get('/stats', authMiddleware, adminController.getDashboardStats);
+router.get('/dashboard', authMiddleware, adminController.getDashboardStats);
 
 // Get all orders
 router.get('/orders', authMiddleware, adminController.getAllOrders);

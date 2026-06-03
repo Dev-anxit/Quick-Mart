@@ -8,6 +8,7 @@ import orderRoutes from './routes/orders';
 import cartRoutes from './routes/cart';
 import adminRoutes from './routes/admin';
 import promoRoutes from './routes/promos';
+import userRoutes from './routes/user';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/promos", promoRoutes);
+app.use("/api/user", userRoutes);
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

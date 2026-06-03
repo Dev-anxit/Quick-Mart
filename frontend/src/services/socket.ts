@@ -82,11 +82,11 @@ export function onOrderStatusUpdate(
     callback(data);
   };
 
-  socket?.on('order_status_updated', listener);
+  socket?.on('order_status_changed', listener);
 
   // Return unsubscribe function
   return () => {
-    socket?.off('order_status_updated', listener);
+    socket?.off('order_status_changed', listener);
   };
 }
 

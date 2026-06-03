@@ -10,7 +10,7 @@ export class OrderService {
     paymentMethod: string;
     deliveryAddress: string;
   }) {
-    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     const order = await prisma.order.create({
       data: {

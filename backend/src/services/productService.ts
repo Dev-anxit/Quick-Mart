@@ -20,7 +20,7 @@ export class ProductService {
     category?: string;
     page?: number;
     limit?: number;
-    sort?: 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'discount';
+    sort?: string;
   } = {}): Promise<{ products: Product[]; total: number }> {
     const {
       category,
@@ -47,9 +47,11 @@ export class ProductService {
         orderBy.price = 'desc';
         break;
       case 'rating':
+      case '-rating':
         orderBy.rating = 'desc';
         break;
       case 'discount':
+      case '-discount':
         orderBy.discount_percentage = 'desc';
         break;
       case 'newest':
@@ -119,5 +121,18 @@ export class ProductService {
       where: { is_active: true },
       orderBy: { name: 'asc' },
     });
+  }
+
+  static async searchProducts(query: string, limit: number = 20): Promise<Product[]> {
+    return prisma.product.findMany({
+      where: {
+        is_active: true,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+    }) as Promise<Product[]>;
   }
 }

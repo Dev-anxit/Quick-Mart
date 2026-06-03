@@ -1,5 +1,4 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 import { UserService } from '../services/userService';
 import { signToken } from '../config/jwt';
 import { verifyFirebaseIdToken } from '../config/firebaseAdmin';

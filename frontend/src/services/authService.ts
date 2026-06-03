@@ -1,5 +1,5 @@
 import apiClient from './api';
-import type { UserResponse, LoginResponse } from '../types/api';
+import type { LoginResponse } from '../types/api';
 import { useAuthStore } from '../store/authStore';
 
 export const authService = {
@@ -9,14 +9,14 @@ export const authService = {
    */
   verifyFirebaseToken: async (firebaseToken: string) => {
     try {
-      const response = await apiClient.post<{
-        success: boolean;
-        data: UserResponse & { token: string }
-      }>('/auth/verify-token', { token: firebaseToken });
+      const response = await apiClient.post<any>('/auth/verify-token', { token: firebaseToken });
 
-      if (response.data.success && response.data.data) {
-        const { token, ...userData } = response.data.data;
+      // Backend returns { success, token, user: { id, uid, email, name, phone } }
+      const data = response.data;
+      const token = data.token || data.data?.token;
+      const userData = data.user || data.data;
 
+      if (data.success && token && userData) {
         // Convert string dates to Date objects
         const user = {
           ...userData,
@@ -78,21 +78,24 @@ export const authService = {
     phone?: string;
     avatar?: string;
   }) => {
-    const response = await apiClient.put<{ success: boolean; data: UserResponse }>(
+    const response = await apiClient.put<any>(
       '/auth/profile',
       data
     );
 
-    if (response.data.success) {
+    const resData = response.data;
+    const userData = resData.user || resData.data;
+
+    if (resData.success && userData) {
       const user = {
-        ...response.data.data,
-        createdAt: response.data.data.createdAt ? new Date(response.data.data.createdAt) : new Date(),
-        updatedAt: response.data.data.updatedAt ? new Date(response.data.data.updatedAt) : new Date(),
+        ...userData,
+        createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+        updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
       };
       useAuthStore.getState().updateProfile(user);
     }
 
-    return response.data.data;
+    return resData.user || resData.data;
   },
 
   /**

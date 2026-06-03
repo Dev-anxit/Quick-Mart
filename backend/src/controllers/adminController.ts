@@ -30,9 +30,15 @@ export async function getAllOrders(req: Request, res: Response) {
       prisma.order.count({ where }),
     ]);
 
+    const normalizedOrders = orders.map((o) => ({
+      ...o,
+      _id: o.id,
+    }));
+
     res.json({
       success: true,
-      orders,
+      orders: normalizedOrders,
+      data: normalizedOrders,
       pagination: {
         page: Number(page),
         total,
@@ -61,8 +67,18 @@ export async function getDashboardStats(req: Request, res: Response) {
       }),
     ]);
 
+    const activeProducts = await prisma.product.count({ where: { is_active: true } });
+    const lowStock = await prisma.product.count({ where: { stock: { lte: 5 } } });
+
     res.json({
       success: true,
+      data: {
+        total_orders: totalOrders,
+        total_revenue: totalRevenue._sum.total_amount || 0,
+        active_products: activeProducts,
+        low_stock: lowStock,
+        total_users: totalUsers,
+      },
       stats: {
         totalUsers,
         totalOrders,
@@ -130,7 +146,12 @@ export async function getAdminProducts(req: Request, res: Response) {
 // Update order status
 export async function updateOrderStatus(req: Request, res: Response) {
   try {
-    const { orderId, status } = req.body;
+    const orderId = req.params.orderId || req.body.orderId;
+    const { status } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required" });
+    }
 
     await OrderService.updateOrderStatus(orderId, status);
 
@@ -146,7 +167,12 @@ export async function updateOrderStatus(req: Request, res: Response) {
 // Assign rider
 export async function assignRider(req: Request, res: Response) {
   try {
-    const { orderId, riderId } = req.body;
+    const orderId = req.params.orderId || req.body.orderId;
+    const { riderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required" });
+    }
 
     await OrderService.assignRider(orderId, riderId);
 

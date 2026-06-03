@@ -1,7 +1,5 @@
 import express from "express";
-import type { Request, Response } from "express";
 import { authMiddleware } from '../middleware/auth';
-import { signToken } from '../config/jwt';
 import * as authController from '../controllers/authController';
 
 const router = express.Router();

@@ -6,6 +6,7 @@ import { useUIStore } from '../store/uiStore';
 import { ProductCard } from '../components/product/ProductCard';
 import productService from '../services/productService';
 import type { ProductResponse, CategoryResponse } from '../types/api';
+import apiClient from '../services/api';
 
 import '../Home.css';
 
@@ -29,12 +30,10 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
     try {
-      const res = await fetch(`/api/promos/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.toUpperCase() }),
+      const response = await apiClient.post('/promos/validate', {
+        code: promoCode.toUpperCase(),
       });
-      const data = await res.json();
+      const data = response.data;
       if (data.success && data.data) {
         applyPromo(data.data);
         addToast({ type: 'success', message: `Promo applied! You save ₹${data.data.discount_value}` });
