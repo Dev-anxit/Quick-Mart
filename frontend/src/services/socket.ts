@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
-const API_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://quick-mart-q63b.onrender.com';
 
 /**
  * Initialize Socket.io connection

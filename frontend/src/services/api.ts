@@ -5,7 +5,7 @@ import { useUIStore } from '../store/uiStore';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://quick-mart-q63b.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
