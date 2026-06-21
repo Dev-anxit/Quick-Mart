@@ -45,8 +45,11 @@ app.use(cors({
   credentials: true,
 }));
 
+import path from 'path';
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {

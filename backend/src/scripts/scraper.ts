@@ -448,30 +448,42 @@ async function runScrapeAndSeed() {
     let count = 0;
     for (const prod of allScrapedProducts) {
       const catId = getCategoryId(prod.category);
-      
-      // Form matching name, prepended with store/source for direct comparison in UI
       const comparedTitle = `${prod.name} (${prod.source})`;
 
-      // Upsert based on unique compared name
-      await prisma.product.upsert({
-        where: { id: `scraped_${prod.source.toLowerCase()}_${prod.name.toLowerCase().replace(/\s+/g, '_')}` },
-        create: {
-          id: `scraped_${prod.source.toLowerCase()}_${prod.name.toLowerCase().replace(/\s+/g, '_')}`,
-          name: comparedTitle,
-          description: `${prod.description} \nSource Store: ${prod.source}. Standard weight: ${prod.weight || '1 unit'}.`,
-          price: prod.price,
-          discount_percentage: Math.random() > 0.6 ? Math.floor(Math.random() * 15) : 0,
-          stock: Math.floor(50 + Math.random() * 150),
-          rating: prod.rating || 4.2,
-          category_id: catId,
-          image_urls: [prod.image_url],
-        },
-        update: {
-          price: prod.price,
-          description: `${prod.description} \nSource Store: ${prod.source}. Standard weight: ${prod.weight || '1 unit'}.`,
-          image_urls: [prod.image_url],
-        }
+      // Find based on compared name
+      const existing = await prisma.product.findFirst({
+        where: { name: comparedTitle }
       });
+
+      const payload = {
+        name: comparedTitle,
+        description: `${prod.description} \nSource Store: ${prod.source}. Standard weight: ${prod.weight || '1 unit'}.`,
+        price: prod.price,
+        discount_percentage: Math.random() > 0.6 ? Math.floor(Math.random() * 15) : 0,
+        stock: Math.floor(50 + Math.random() * 150),
+        rating: prod.rating || 4.2,
+        category_id: catId,
+        image_urls: [prod.image_url],
+        weight: prod.weight || '1 unit',
+        veg_nonveg: 'veg',
+      };
+
+      if (existing) {
+        await prisma.product.update({
+          where: { id: existing.id },
+          data: {
+            price: prod.price,
+            description: payload.description,
+            image_urls: [prod.image_url],
+            weight: payload.weight,
+            veg_nonveg: 'veg',
+          }
+        });
+      } else {
+        await prisma.product.create({
+          data: payload
+        });
+      }
       count++;
     }
 

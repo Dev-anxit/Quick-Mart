@@ -8,6 +8,7 @@ import Track from './pages/Track';
 import Account from './pages/Account';
 import Admin from './pages/Admin';
 import OrderConfirmation from './pages/OrderConfirmation';
+import DeliveryPartner from './pages/DeliveryPartner';
 import { LoginPanel } from './components/LoginPanel';
 
 import { useUIStore } from './store/uiStore';
@@ -30,6 +31,7 @@ function App() {
           <Route path="/track/:orderId" element={<Track />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/delivery" element={<DeliveryPartner />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

@@ -1,6 +1,7 @@
 import express from 'express';
 import * as adminController from '../controllers/adminController';
 import { authMiddleware } from '../middleware/auth';
+import { upload } from '../middleware/upload';
 
 const router = express.Router();
 
@@ -21,5 +22,16 @@ router.put('/orders/:orderId/status', authMiddleware, adminController.updateOrde
 
 // Assign rider to order
 router.post('/orders/:orderId/assign-rider', authMiddleware, adminController.assignRider);
+
+// Upload product image
+router.post('/upload', authMiddleware, upload.single('image'), adminController.handleLocalUpload);
+
+// Create category
+router.post('/categories', authMiddleware, adminController.createCategory);
+
+// Promo management
+router.get('/promos', authMiddleware, adminController.getAdminPromos);
+router.post('/promos', authMiddleware, adminController.createPromo);
+router.delete('/promos/:id', authMiddleware, adminController.deletePromo);
 
 export default router;

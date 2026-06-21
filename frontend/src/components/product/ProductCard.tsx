@@ -63,9 +63,9 @@ export function ProductCard({ product, onCartOpen }: ProductCardProps) {
   return (
     <div className="product-card">
       <div className="product-img-wrap">
-        {product.image_url && !imgError ? (
+        {imageUrl && !imgError ? (
           <img
-            src={product.image_url}
+            src={imageUrl}
             alt={product.name}
             onError={() => setImgError(true)}
           />

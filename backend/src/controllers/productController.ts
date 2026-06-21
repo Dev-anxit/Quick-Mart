@@ -89,7 +89,7 @@ export async function getCategories(req: Request, res: Response) {
 // Admin: Create product
 export async function createProduct(req: Request, res: Response) {
   try {
-    const { name, description, price, discount_percentage, stock, category_id, image_urls } = req.body;
+    const { name, description, price, discount_percentage, stock, category_id, image_urls, veg_nonveg, weight } = req.body;
 
     if (!name || !price || !category_id) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -103,6 +103,8 @@ export async function createProduct(req: Request, res: Response) {
       stock,
       category_id,
       image_urls,
+      veg_nonveg,
+      weight,
     });
 
     res.json({
@@ -118,7 +120,7 @@ export async function createProduct(req: Request, res: Response) {
 export async function updateProduct(req: Request, res: Response) {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const { name, description, price, discount_percentage, stock, is_active } = req.body;
+    const { name, description, price, discount_percentage, stock, is_active, veg_nonveg, weight, image_urls } = req.body;
 
     const product = await ProductService.updateProduct(id, {
       name,
@@ -127,6 +129,9 @@ export async function updateProduct(req: Request, res: Response) {
       discount_percentage,
       stock,
       is_active,
+      veg_nonveg,
+      weight,
+      image_urls,
     });
 
     res.json({

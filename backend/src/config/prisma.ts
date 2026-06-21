@@ -17,8 +17,8 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export async function connectDatabase() {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Prisma/PostgreSQL connected successfully');
+    await prisma.$connect();
+    console.log('✅ Prisma/MongoDB connected successfully');
   } catch (error) {
     console.error('❌ Database connection error:', error);
     throw error;
