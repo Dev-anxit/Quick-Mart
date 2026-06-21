@@ -3,9 +3,12 @@ import type { AxiosInstance, AxiosError } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 
+// Production backend URL — Render deployment
+const PRODUCTION_API = 'https://quick-mart-q63b.onrender.com/api';
+
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://quick-mart-q63b.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || PRODUCTION_API,
   headers: {
     'Content-Type': 'application/json',
   },
