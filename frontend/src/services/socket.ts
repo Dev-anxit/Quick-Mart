@@ -1,7 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
-const API_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://quick-mart-q63b.onrender.com';
+const isProd = import.meta.env.PROD;
+const PRODUCTION_SOCKET = 'https://quick-mart-q63b.onrender.com';
+const API_URL = isProd ? PRODUCTION_SOCKET : (import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || PRODUCTION_SOCKET);
 
 /**
  * Initialize Socket.io connection

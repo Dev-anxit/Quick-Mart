@@ -6,9 +6,13 @@ import { useUIStore } from '../store/uiStore';
 // Production backend URL — Render deployment
 const PRODUCTION_API = 'https://quick-mart-q63b.onrender.com/api';
 
+// Vercel dashboard holds a stale URL. Override it in production.
+const isProd = import.meta.env.PROD;
+const API_URL = isProd ? PRODUCTION_API : (import.meta.env.VITE_API_BASE_URL || PRODUCTION_API);
+
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || PRODUCTION_API,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
